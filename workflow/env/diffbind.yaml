@@ -1,0 +1,4 @@
+channels:
+    - bioconda
+dependencies:
+    - bioconductor-diffbind=2.16.0

@@ -1,0 +1,100 @@
+rule all:
+  input:
+    'de_novo_mites/de_novo_mites.all.aln',
+
+rule repeatmodeler_processing:
+  input:
+    'species/{sample}/repeatmodeler/consensi.fa',
+    'meme/elegans.GL_specific_vs_nonGL_specific/summary.tsv',
+    'meme/elegans.GL_specific_vs_nonGL_specific/meme_out/meme.txt',
+    'data/external_data/CERP2.fa',
+    'data/external_data/CELE2.fa',
+  output:
+    'species/{sample}/repeatmodeler/{sample}_repeatmodeler.CERP2.aln',
+    'species/{sample}/repeatmodeler/{sample}_repeatmodeler.CELE2.aln',
+    directory('species/{sample}/repeatmodeler/fimo_m1'),
+    directory('species/{sample}/repeatmodeler/fimo_m2'),
+    'species/{sample}/repeatmodeler/{sample}_repeatmodeler.m1m2_pairs',
+  params:
+    'species/{sample}/repeatmodeler/consensi_db/consensi.fa'
+  shell:
+    '''
+    makeblastdb -dbtype nucl -in {input[0]} -out {params}
+    blastn -query {input[3]} -db {params} -outfmt 7 > {output[0]}
+    blastn -query {input[4]} -db {params} -outfmt 7 > {output[1]}
+    m1_consensus=$(sed -n 3p {input[1]} | awk '{{print $3}}')
+    m2_consensus=$(sed -n 4p {input[1]} | awk '{{print $3}}')
+    fimo --max-stored-scores 1000000 --motif $m1_consensus --oc {output[2]} --thresh 1e-3 {input[2]} {input[0]}
+    fimo --max-stored-scores 1000000 --motif $m2_consensus --oc {output[3]} --thresh 1e-3 {input[2]} {input[0]}
+    sed '1d' {output[2]}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($7 > 1) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output[2]}/fimo_m1.bed
+    sed '1d' {output[3]}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($7 > 1) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output[3]}/fimo_m2.bed
+    samtools faidx {input[0]}
+    cut -f 1,2 {input[0]}.fai | sort -k 1,1 > {input[0]}.size
+    closestBed -a {output[2]}/fimo_m1.bed -b {output[3]}/fimo_m2.bed -d -io -k 3 -g {input[0]}.size | awk '{{if ($13 < 33 && $13 > 11) print}}' > {output[4]}
+    '''
+
+rule mitehunter_processing:
+  input:
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.all.fa',
+    'data/external_data/CERP2.fa',
+    'data/external_data/CELE2.fa',
+    'meme/elegans.GL_specific_vs_nonGL_specific/summary.tsv',
+    'meme/elegans.GL_specific_vs_nonGL_specific/meme_out/meme.txt'
+  output:
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.CERP2.aln',
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.CELE2.aln',
+    directory('species/{sample}/mitehunter/fimo_m1'),
+    directory('species/{sample}/mitehunter/fimo_m2'),
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.m1m2_pairs'
+  params:
+    'species/{sample}/mitehunter/{sample}_mitehunter.blastdb/{sample}_mitehunter.mites'
+  shell:
+    '''
+    makeblastdb -in {input[0]} -dbtype nucl -out {params}
+    blastn -query {input[1]} -db {params} -outfmt 7 > {output[0]}
+    blastn -query {input[2]} -db {params} -outfmt 7 > {output[1]}
+    m1_consensus=$(sed -n 3p {input[3]} | awk '{{print $3}}')
+    m2_consensus=$(sed -n 4p {input[3]} | awk '{{print $3}}')
+    fimo --max-stored-scores 1000000 --motif $m1_consensus --oc {output[2]} --thresh 1e-3 {input[4]} {input[0]}
+    fimo --max-stored-scores 1000000 --motif $m2_consensus --oc {output[3]} --thresh 1e-3 {input[4]} {input[0]}
+    sed '1d' {output[2]}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($7 > 1) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output[2]}/fimo_m1.bed
+    sed '1d' {output[3]}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($7 > 1) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output[3]}/fimo_m2.bed
+    samtools faidx {input[0]}
+    cut -f 1,2 {input[0]}.fai | sort -k 1,1 > {input[0]}.size
+    closestBed -a {output[2]}/fimo_m1.bed -b {output[3]}/fimo_m2.bed -d -io -k 3 -g {input[0]}.size | awk '{{if ($13 < 33 && $13 > 11) print}}' > {output[4]}
+    '''
+
+rule denovo_mite_extractor:
+  input:
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.m1m2_pairs',
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.all.fa',
+    'species/{sample}/repeatmodeler/{sample}_repeatmodeler.m1m2_pairs',
+    'species/{sample}/repeatmodeler/consensi.fa',
+  output:
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.m1m2_pairs.canonical.fa',
+    'species/{sample}/mitehunter/{sample}_mitehunter.mite.m1m2_pairs.canonical.names',
+    'species/{sample}/repeatmodeler/{sample}_repeatmodeler.m1m2_pairs.canonical.fa',
+    'species/{sample}/repeatmodeler/{sample}_repeatmodeler.m1m2_pairs.canonical.names',
+  shell:
+    '''
+    python scripts/mite_extractor.py {input[0]} {output[0]} {input[1]} {wildcards.sample}_mh {output[1]}
+    python scripts/mite_extractor.py {input[2]} {output[2]} {input[3]} {wildcards.sample}_rm {output[3]}
+    '''
+
+
+rule denovo_mite_alignment:
+  input:
+    mitehunter_res = expand('species/{sample}/mitehunter/{sample}_mitehunter.mite.m1m2_pairs.canonical.fa', sample = REPEAT_SEARCH_SPECIES),
+    repeatmod_res = expand('species/{sample}/repeatmodeler/{sample}_repeatmodeler.m1m2_pairs.canonical.fa', sample = REPEAT_SEARCH_SPECIES),
+    CERP2 = 'data/external_data/CERP2.fa',
+    CELE2 = 'data/external_data/CELE2.fa',
+  output:
+    all_mites = 'de_novo_mites/de_novo_mites.all.fa',
+    dist = 'de_novo_mites/de_novo_mites.all.dist',
+    aln = 'de_novo_mites/de_novo_mites.all.aln'
+  shell:
+    '''
+    cat {input.mitehunter_res} {input.repeatmod_res} {input.CERP2} {input.CELE2} > {output.all_mites}
+    clustalo --infile={output.all_mites} --distmat-out={output.dist}.temp --outfile={output.aln} --full-iter --full --percent-id --output-order=tree-order
+    sed '1d' {output.dist}.temp > {output.dist}; rm {output.dist}.temp
+    '''

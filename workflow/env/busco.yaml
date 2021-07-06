@@ -1,0 +1,7 @@
+channels:
+    - bioconda
+    - conda-forge
+    - anaconda
+dependencies:
+    - busco=5.0.0
+    - biopython=1.77
