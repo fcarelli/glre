@@ -1,0 +1,46 @@
+chip_samples:
+  elegans_HIM17_rep1: samples/aa658-03_S7.r1.fq.gz
+  elegans_HIM17_rep2: samples/aa658-04_S8.r1.fq.gz
+
+rnaseq_samples:
+  elegans_wt_rep1: samples/elegans.N2.reyd0017.HS904.rep1.fq.gz
+  elegans_wt_rep2: samples/elegans.N2.reyd0018.HS904.rep2.fq.gz
+  elegans_him17_rep1: samples/elegans.him17.ccc036.HS867.rep1.fq.gz
+  elegans_him17_rep2: samples/elegans.him17.ccc037.HS867.rep2.fq.gz
+
+chip_sample_names:
+  - elegans_HIM17
+
+rnaseq_sample_names:
+  - elegans_wt
+  - elegans_him17
+
+lcap_samples_ce:
+  - annot_ce_lcap_glp1_ya_rep1
+  - annot_ce_lcap_glp1_ya_rep2
+  - annot_ce_lcap_wt_ya_rep1
+  - annot_ce_lcap_wt_ya_rep2
+
+lcap_samples_cb:
+  - annot_cb_lcap_glp1_ya_rep1
+  - annot_cb_lcap_glp1_ya_rep2
+  - annot_cb_lcap_wt_ya_rep1
+  - annot_cb_lcap_wt_ya_rep2
+
+elegans_external_rnaseq_samples:
+  - sL1_pgc_rep1
+  - sL1_pgc_rep2
+  - sL1_pgc_rep3
+  - sL1_pgc_rep4
+  - fL1_pgc_rep1
+  - fL1_pgc_rep2
+  - fL1_pgc_rep3
+  - elegans_L1_rep1
+  - elegans_L1_rep2
+  - elegans_L1_rep3
+  - elegans_L2_rep1
+  - elegans_L3_rep1
+  - elegans_L4_rep1
+  - elegans_lateL4_rep1
+  - elegans_YA_rep1
+
