@@ -1,7 +1,7 @@
 # 
 /*
-relmapping/annot_ce/*
-relmapping/annot_cb/*
+/relmapping/annot_ce/*
+/relmapping/annot_cb/*
 # except
 !.gitignore
 !Snakefile
