@@ -1,4 +1,4 @@
-# glre
+# Analysis of germline-specific elements
 
 Full code to reproduce the analysis of C. elegans germline regulatory elements. It involves two separate steps:
 - annotation of regulatory elements in C. elegans and C. briggsae using an adaptation of the relmapping pipeline by Jänes et al, 2018 ("relmapping" step)
@@ -13,7 +13,7 @@ then create two conda environments using the relmapping.yml and the glre.yml fil
 conda env create --file relmapping.yml
 conda env create --file glre.yml
 ```
-## Regulatory elements annotation 
+## Regulatory elements annotation (relmapping step)
 To run the relmapping step, you will need to upload the ATAC-seq and the longCap-seq data in the glre/relmapping/samples directory. Then activate the relmapping environment and launch the analysis on C. elegans and C. briggsae (you can to add ```-n``` to test a snakemake command)
 )
 ```
@@ -24,7 +24,7 @@ snakemake --use-conda --cores 50 -s Snakefile.ce annot_ce --cluster sbatch
 ```
 If you plan to use different sets of data, modify the glre/relmapping/workflows/config.yaml file to update the filenames
 
-## Analysis of germline-specific elements
+## germline-specific elements analysis (glre step)
 After annotating the C. elegans and C. briggsae regulatory elements, you can reproduce the analysis of germline-specific regulatory elements described in Carelli et al \[in prep\]. 
 
 You will first have to upload the sets of ChIP-seq and RNA-seq data listed in [glre_seq_data.txt] in the /glre/data folder with the following command:
