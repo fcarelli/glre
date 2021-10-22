@@ -1,0 +1,13 @@
+# Ignore everything in this directory
+/*
+# Except this file
+!.gitignore
+!/scripts
+!/Snakefile.ce
+!/Snakefile.cb
+!/workflows
+!/yapc
+!/annot_ce
+!/annot_cb
+
+

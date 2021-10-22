@@ -1,14 +1,10 @@
 # 
 /*
-/relmapping/annot_ce/*
-/relmapping/annot_cb/*
 # except
 !.gitignore
-!Snakefile
+!Snakefile*
 !workflow/
-!relmapping/workflows/
-!relmapping/yapc/
-!relmapping/Snakefile.*
-!relmapping/scripts/
-!relmapping/annot_c*/notebooks/
+!relmapping/
+
+
 
