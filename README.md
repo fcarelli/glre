@@ -5,9 +5,9 @@ Full code to reproduce the analysis of C. elegans germline regulatory elements. 
 - analysis of germline-specific regulatory elements ("glre" step)
 
 To reproduce the analysis, clone this repository on your system
-
+```
 git clone 
-
+```
 then create two conda environments using the relmapping.yml and the glre.yml files. Use the following commands to create them:
 - conda env create --file relmapping.yml
 - conda env create --file glre.yml
