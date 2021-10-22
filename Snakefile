@@ -1,0 +1,107 @@
+SPECIES = ["elegans", "inopinata", "briggsae", "remanei", "nigoni", "contortus", "tipulae", "bacteriophora", "ceylanicum", "pacificus", "redivivus"]
+ALL_SPECIES = ["elegans", "inopinata", "briggsae", "remanei", "nigoni", "contortus", "tipulae", "bacteriophora", "ceylanicum", "pacificus", "redivivus", "becei", "bovis", "monodelphis", "plicata", "quiockensis", "uteleia", "exspectatus"]
+REPEAT_SEARCH_SPECIES = ["elegans", "inopinata", "briggsae", "remanei", "nigoni", "bovis", "contortus", "tipulae", "pacificus"]
+NOT_ELEGANS = ["inopinata", "briggsae", "remanei", "nigoni", "contortus", "tipulae", "bacteriophora", "ceylanicum", "pacificus", "redivivus", "becei", "bovis", "monodelphis", "plicata", "quiockensis", "uteleia", "exspectatus"]
+SPECIES_MOTIF_PLOTS = ["elegans", "contortus", "pacificus", "briggsae", "nigoni", "inopinata", "remanei", "ceylanicum"]
+THAP_ANALYSIS_SPECIES = ["elegans", "inopinata", "briggsae", "remanei", "nigoni", "contortus", "tipulae", "bacteriophora", "ceylanicum", "becei", "bovis", "monodelphis", "plicata", "quiockensis", "uteleia", "placei", "caninum", "polygyrus", "brasiliensis", "viviparus", "rhodensis", "sinica", "afra", "panamensis", "virilis", "pacificus", "redivivus", "exspectatus"]
+THAP_ANALYSIS_EURHABDITIS = ["elegans", "inopinata", "briggsae", "remanei", "nigoni", "contortus", "tipulae", "bacteriophora", "ceylanicum", "becei", "bovis", "monodelphis", "plicata", "quiockensis", "uteleia", "placei", "caninum", "polygyrus", "brasiliensis", "viviparus", "rhodensis", "sinica", "afra", "panamensis", "virilis"]
+STRONGYLIDA=["contortus", "tipulae", "bacteriophora", "ceylanicum"]
+
+STAGES = ["embryo_series_1", "embryo_series_2", "embryo_series_3", "embryo_series_4", "postembryonic"]
+EXTERNAL_ATAC = ["pgc", "adult_gl"]
+REPS = ["rep1", "rep2"]
+RNASEQ_SAMPLES=["wt", "him17"]
+STRANDS=["1", "2"]
+
+configfile: 'workflow/config.yaml'
+
+include: 'workflow/species_annotation.snakefile'
+include: 'workflow/RE_annotation.snakefile'
+include: 'workflow/repeat_analysis.snakefile'
+include: 'workflow/evolution.snakefile'
+include: 'workflow/him17.snakefile'
+include: 'workflow/briggsae_analysis.snakefile'
+include: 'workflow/results_plots.snakefile'
+
+
+rule all:
+  input:
+    expand('motif_enrichment/{sample}/{sample}.m1m2_clusters.arrangements_by_distance.summary', sample=ALL_SPECIES),
+    'RE_shuffling/coding_prom_GL.shuffling.results',
+    expand('data/external_data/atac/peaks/elegans.{sample}.{rep}/elegans.{sample}.{rep}_treat_pileup.sorted.bw', sample=EXTERNAL_ATAC, rep=REPS),
+    expand('data/external_data/atac/yapc/elegans.{sample}.smooth_100_yapc_0.001.bed', sample=EXTERNAL_ATAC),
+    'plots/ATAC_coverage_GL_promoters_elegans.pdf',
+    'RE_annotation/reg_elements_all.elegans.gl_specific.m1m2.bed',
+    'RE_features/reg_elements_all.elegans.not_gl_specific.promoters.no_m1m2.cpg',
+    'motif_enrichment/elegans/elegans.motif3_association.txt',
+    expand('motif_enrichment/{sample}/{sample}.m3.bed', sample=ALL_SPECIES),
+    expand('GL_genes_exp/promoters_not_gl_specific.elegans.no_m1m2.unique_promoter.{sample}.exp', sample=STAGES),
+    'GL_genes_exp/promoters_gl_specific.elegans.m1m2.unique_promoter.embryo_germline.exp',
+    expand('motif_enrichment/{sample}/{sample}.m1m2_clusters.bw', sample=ALL_SPECIES),
+    'motif_enrichment/elegans/repeat_m1m2_overlap.summary',
+    'motif_enrichment/elegans/repeat_GL_promoter_overlap.summary',
+    'gene_annotation/elegans.GL_specific_genes.m1m2_unique.genes',
+    'gene_annotation/briggsae.genes_DESeq_glp1_vs_wt.txt',
+    'data/external_data/boeck_unified_exp_data.txt',
+    'meme/elegans.GL_specific_m1m2_vs_nonGL_specific_m1m2',
+    'plots/current_vs_serizay_RE_annotation.heatmap.pdf',
+    expand('TF_evolution/orthologs/HIM17.{sample}.aln', sample = THAP_ANALYSIS_SPECIES),
+    expand('TF_evolution/THAP_conservation/{sample}.THAP.parsed', sample = THAP_ANALYSIS_SPECIES),
+    'data/external_data/elegans.tipulae.1to1.txt',
+    'plots/HIM17_identity.heat.pdf',
+    'plots/HIM17_orthologs_identity.pdf',
+    expand('data/elegans/chipseq/yapc/{sample}.smooth_100_yapc_coverage.bw', sample=config["chip_sample_names"]),
+    'chip_stats/chip_stats.txt',
+    expand('data/elegans/rnaseq/fastq/{sample}.r1.fq.gz', sample=config["rnaseq_samples"]),
+    expand('chip_stats/{sample}.motif_stats.txt', sample=config["chip_sample_names"]),
+    expand('meme/{sample}.nomotif.enrichment', sample=config["chip_sample_names"]),
+    expand('data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str1.out.bw', sample=config["rnaseq_samples"]),
+    expand('data/elegans/rnaseq/tracks/elegans_{sample}_merged.Signal.UniqueMultiple.str{strand}.out.bw', sample=RNASEQ_SAMPLES, strand=STRANDS),
+    expand('data/elegans/rnaseq/kallisto/{sample}/abundance.genes.txt', sample=config["rnaseq_samples"]),
+    expand('data/elegans/rnaseq/kallisto/{sample}/abundance.h5', sample=config["rnaseq_samples"]),
+    'data/elegans/rnaseq/gene_expression.kallisto.txt',
+    'DE_analysis/genes_downregulated_him17_vs_N2.direct.txt',
+    'RE_features/briggsae.motif_GL_overlap.summary',
+    'promoter_annotation/promoters_all.briggsae.bed',
+    'meme/briggsae.GL_specific_vs_nonGL_specific',
+    'meme/briggsae.GL_specific_m1m2_vs_nonGL_specific_m1m2',
+    'RE_features/reg_elements_all.briggsae.gl_specific.promoters.m1m2.nuc',
+    'RE_conservation/conservation_statistics.txt',
+    'RE_conservation_all/conservation_statistics.txt',
+    'RE_conservation/promoters_GL_m1m2.briggsae.by_type.summary',
+    'RE_conservation/promoters_GL_m1m2.elegans.by_type.summary',
+    expand('data/external_data/rnaseq/elegans/kallisto/{sample}/abundance.genes.txt', sample=config['elegans_external_rnaseq_samples']),
+    'data/external_data/rnaseq/elegans/gene_expression.stages.txt',
+    'data/external_data/rnaseq/elegans/gene_expression.pgc.txt',
+    'plots/HIM17_CELE2_CERP2_m1m2_RE.heatmap.repeat_sorted.pdf',
+    'motif_conservation/elegans.tandem_m2m1.GLRE.heat.pdf',
+    'plots/RE_ATAC.elegans.heatmap.pdf',
+    'plots/RE_m1m2_ATAC.heatmap.pdf',
+    'test_him17_cov/promoters_elegans_HIM17.heatmap.pdf',
+    'plots/RE_m1m2_external_ATAC.heatmap.pdf',
+    expand('plots/{sample}.m1m2.all_genes.profile.pdf', sample=SPECIES_MOTIF_PLOTS),
+    'plots/GL_promoters_m1m2_external_ATAC.heatmap.pdf',
+    expand('plots/{sample}.m3.all_genes.profile.pdf', sample=SPECIES_MOTIF_PLOTS),
+    'plots/qPCR_HIM17_pct_input.pdf',
+    'plots/mut_vs_wt_expression.m1m2_promoters.pdf',
+    'intact_repeats/elegans/elegans_CERP2.inactive.clw.hmm',
+    'intact_repeats/elegans/elegans_CELE2.intact.clw.hmm',
+    'intact_repeats/inactive_CERP2_elegans.hmm',
+    'intact_repeats/elegans/elegans_CERP2.no_HIM17.clw.hmm',
+    'plots/TT_periodicity_CERP2_elements.pdf',
+    'plots/TT_periodicity_CELE2_elements.pdf',
+    'plots/m1m2_permutation_test.pdf',
+    'RE_conservation_all/conserved_vs_species_specific_promoters.m1m2_statistics.txt',
+    'plots/conserved_sp_specific_promoters.m1m2_overlap.pdf',
+    expand('CELE2_CERP2_other_species/{sample}.summary', sample=REPEAT_SEARCH_SPECIES),
+    expand('motif_conservation_strongylida/{sample}.motif_orthology.txt', sample=STRONGYLIDA),
+    "data/elegans/chipseq/yapc/elegans_HIM17.smooth_100_yapc_0.00001.bed",
+    'modern_analysis/annotatedPeak.peaks_GLpromoters.m1m2.enrichment',
+    'plots/HIM17_peaks_m1m2_overlap.pdf',
+    'plots/him17_vs_wt_volcano.pdf',
+    'plots/GO_enrichment_direct_targets.pdf',
+
+
+    
+
+
