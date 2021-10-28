@@ -99,9 +99,11 @@ rule him17_alignment:
 
 rule elegans_other_species_ortholog_id:
   input:
-    'data/external_data/elegans.other_caenorhabditis.orthologs.id',
-    'data/external_data/elegans.other_nematodes.orthologs.id',
+    'data/external_data/elegans.other_caenorhabditis.orthologs.id.gz',
+    'data/external_data/elegans.other_nematodes.orthologs.id.gz',
   output:
+    temp('data/external_data/elegans.other_caenorhabditis.orthologs.id'),
+    temp('data/external_data/elegans.other_nematodes.orthologs.id'),
     'data/external_data/elegans.inopinata.1to1.txt',
     'data/external_data/elegans.briggsae.1to1.txt',
     'data/external_data/elegans.nigoni.1to1.txt',
@@ -112,22 +114,26 @@ rule elegans_other_species_ortholog_id:
     'data/external_data/elegans.tipulae.1to1.txt',
   shell:
     '''
-    python scripts/biomart_elegans_orthologs_parser.caenorhabditis.py {input[0]} {output[0]} {output[1]} {output[2]} {output[3]}
-    python scripts/biomart_elegans_orthologs_parser.other_nematodes.py {input[1]} {output[4]} {output[5]} {output[6]} {output[7]}
+    gunzip -c {input[0]} > {output[0]}
+    gunzip -c {input[1]} > {output[1]}
+    python scripts/biomart_elegans_orthologs_parser.caenorhabditis.py {output[0]} {output[2]} {output[3]} {output[4]} {output[5]}
+    python scripts/biomart_elegans_orthologs_parser.other_nematodes.py {output[1]} {output[6]} {output[7]} {output[8]} {output[9]}
     '''
 
 
 rule briggsae_other_species_ortholog_id:
   input:
-    'data/external_data/briggsae.other_caenorhabditis.orthologs.id'
+    'data/external_data/briggsae.other_caenorhabditis.orthologs.id.gz'
   output:
+    temp('data/external_data/briggsae.other_caenorhabditis.orthologs.id'),
     'data/external_data/briggsae.nigoni.1to1.txt',
     'data/external_data/briggsae.remanei.1to1.txt',
     'data/external_data/briggsae.elegans.1to1.txt',
     'data/external_data/briggsae.inopinata.1to1.txt',
   shell:
     '''
-    python scripts/biomart_briggsae_orthologs_parser.caenorhabditis.py {input} {output[0]} {output[1]} {output[2]} {output[3]}
+    gunzip -c {input[0]} > {output[0]}
+    python scripts/biomart_briggsae_orthologs_parser.caenorhabditis.py {output[0]} {output[1]} {output[2]} {output[3]} {output[4]}
     '''
 
 
@@ -190,3 +196,24 @@ rule orthologs_plots_R:
     '''
     Rscript scripts/him17_orthologs.R
     '''
+
+rule positive_selection_test:
+  input:
+    'TF_evolution/positive_selection/HIM17_prot.all.fa',
+    'TF_evolution/positive_selection/HIM17_cdna.all.fa',
+    'TF_evolution/positive_selection/HIM17.all.tree',
+    'TF_evolution/positive_selection/branch_site_null/codeml_him17_null.ctl',
+    'TF_evolution/positive_selection/branch_site_alt/codeml_him17_alt.ctl',
+  output:
+    'TF_evolution/positive_selection/HIM17_prot.all.mafft.fa',
+    'TF_evolution/positive_selection/HIM17.all.linsi.pal2nal.codon.phy',
+    'TF_evolution/positive_selection/branch_site_null/HIM17.all.modelA.null',
+    'TF_evolution/positive_selection/branch_site_alt/HIM17.all.modelA.alt',
+  shell:
+    '''
+    mafft --localpair --maxiterate 1000 {input[0]} > {output[0]}
+    pal2nal.pl {outpu[0]} {input[1]} -output paml -nogap > {output[1]}
+    cd TF_evolution/positive_selection/branch_site_null; codeml codeml_him17_null.ctl
+    cd ../branch_site_alt; codeml codeml_him17_alt.ctl
+    '''
+

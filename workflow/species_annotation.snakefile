@@ -145,7 +145,7 @@ rule protein_annotation_download_all:
     bacteriophora='species/bacteriophora/protein_sequences/bacteriophora.protein.to_parse.fa',
     ceylanicum='species/ceylanicum/protein_sequences/ceylanicum.protein.to_parse.fa',
     pacificus='species/pacificus/protein_sequences/pacificus.protein.to_parse.fa',
-    redivivus='species/redivivus/protein_sequences/redivivus.protein.to_parse.fa'
+    redivivus='species/redivivus/protein_sequences/redivivus.protein.to_parse.fa',
     becei='species/becei/protein_sequences/becei.protein.longest_isoform.fa',
     bovis='species/bovis/protein_sequences/bovis.protein.longest_isoform.fa',
     monodelphis='species/monodelphis/protein_sequences/monodelphis.protein.longest_isoform.fa',
@@ -196,15 +196,16 @@ rule protein_annotation_processing:
 rule dfam_repeats:
   input:
     genome = "species/{sample}/genome/{sample}.fa",
-    hmm_file = "software/dfamscan/caenorhabditis_elegans_dfam.hmm"
   output:
+    hmm_file = "software/dfamscan/caenorhabditis_elegans_dfam.hmm"
     dfam_out = "species/{sample}/repeats_dfam/{sample}_dfam.out",
     dfam_rep_id = "species/{sample}/repeats_dfam/{sample}_dfam.repeats.id.bed"
   resources:
     cpus=6
   shell:
     '''
-    dfamscan.pl --cut_ga --species "Caenorhabditis elegans" --fastafile {input.genome} --hmmfile {input.hmm_file} --dfam_outfile {output.dfam_out} --cpu {resources.cpus}
+    wget https://www.dfam.org/releases/Dfam_3.1/infrastructure/dfamscan/caenorhabditis_elegans_dfam.hmm -O {output.hmm_file}
+    software/dfamscan/dfamscan.pl --cut_ga --species "Caenorhabditis elegans" --fastafile {input.genome} --hmmfile {output.hmm_file} --dfam_outfile {output.dfam_out} --cpu {resources.cpus}
     sed '1,5d' {output.dfam_out} | awk 'BEGIN{{OFS="\t";}}{{if ($9 == "+") print $3, $10, $11, $1, $2, $9; else print $3, $11, $10, $1, $2, "-"}}' > {output.dfam_rep_id}
     '''
 

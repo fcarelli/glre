@@ -2,9 +2,12 @@
 /*
 # except
 !.gitignore
-!Snakefile*
-!workflow/
+!data
+!HIM17_qPCR
 !relmapping/
-
-
-
+!*.yml
+!scripts
+!Snakefile
+!software
+!TF_evolution/
+!workflow/

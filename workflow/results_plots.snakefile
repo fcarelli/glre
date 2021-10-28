@@ -205,44 +205,6 @@ rule RE_m1m2_ATAC_heatmap:
     '''
 
 
-rule HIM17_RE_by_evolutionary_class_heatmap:
-  input:
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1m2.genes',
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_dm2.genes',
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_only.genes',
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_dm1.genes',
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_only.genes',
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_m2_no_pair.genes',
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.genes',
-    'RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.flanking_m1m2.genes',
-    'RE_conservation_all/promoters_all.elegans.associated_genes.bed',
-    'data/elegans/chipseq/yapc/elegans_HIM17.smooth_100_yapc_coverage.bw',
-    'data/elegans/chipseq/yapc/elegans_XND1.smooth_100_yapc_coverage.bw',
-    'motif_enrichment/elegans/elegans.m1.bed',
-    'motif_enrichment/elegans/elegans.m2.bed',
-    'motif_enrichment/elegans/elegans.m1m2_clusters.bed',
-  output:
-    'test_him17_cov/elegans.to_briggsae_orthologs.promoters_m1m2.bed',
-    'test_him17_cov/elegans.to_briggsae_orthologs.promoters_single_motif.bed',
-    'test_him17_cov/elegans.to_briggsae_orthologs.promoters_no_motifs.bed',
-    'test_him17_cov/promoters_elegans_HIM17.mat.gz',
-    'test_him17_cov/promoters_elegans_HIM17.heatmap.pdf',
-  resources:
-    cpus=10
-  shell:
-    '''
-    join -1 1 -2 4 {input[0]} {input[8]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1}}' | sort -k 1,1 -k2,2n | intersectBed -a stdin -b {input[13]} -u | uniq > {output[0]}
-    join -1 1 -2 4 {input[1]} {input[8]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1}}' | sort -k 1,1 -k2,2n | intersectBed -a stdin -b {input[11]} -u | uniq > {output[1]}
-    join -1 1 -2 4 {input[2]} {input[8]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1}}' | sort -k 1,1 -k2,2n | intersectBed -a stdin -b {input[11]} -u | uniq >> {output[1]}
-    join -1 1 -2 4 {input[3]} {input[8]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1}}' | sort -k 1,1 -k2,2n | intersectBed -a stdin -b {input[12]} -u | uniq >> {output[1]}
-    join -1 1 -2 4 {input[4]} {input[8]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1}}' | sort -k 1,1 -k2,2n | intersectBed -a stdin -b {input[12]} -u | uniq >> {output[1]}
-    join -1 1 -2 4 {input[5]} {input[8]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1}}' | sort -k 1,1 -k2,2n | intersectBed -a stdin -b {input[11]} -u | intersectBed -a stdin -b {input[12]} -u | uniq >> {output[1]}
-    join -v 1 {input[6]} {input[7]} | join -1 1 -2 4 - {input[8]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1}}' | sort -k 1,1 -k2,2n | uniq > {output[2]}
-    computeMatrix scale-regions -R {output[0]} {output[1]} {output[2]} -S {input[9]} {input[10]} --beforeRegionStartLength 500 --afterRegionStartLength 500 --regionBodyLength 200 --startLabel peak_start --endLabel peak_end --binSize 10 --samplesLabel HIM-17 XND-1 -o {output[3]} -p {resources.cpus}
-    plotHeatmap -m {output[3]} -out {output[4]} --averageTypeSummaryPlot mean --missingDataColor 0.5 --colorList 'white,green' 'white,blue' --plotTitle "elegans promoters" -min 0 -max 60 60 --heatmapWidth 12 --heatmapHeight 20
-    '''
-
-
 rule m1m2_coding_gene_profiles:
   input:
     'motif_enrichment/{sample}/{sample}.m1m2_clusters.bed',

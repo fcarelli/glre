@@ -1,0 +1,8 @@
+# Ignore everything in this directory
+/*
+# Except this file
+!.gitignore
+!/codeml_him17_null.ctl
+
+
+

@@ -110,6 +110,8 @@ rule trim_adapt:
     '''
     trim_galore --gzip --trim-n -j {resources.cpus} -o {params} {input}
     '''
+
+
 rule bwa:
   input:
     'bwa_idx/elegans.amb',
@@ -198,7 +200,7 @@ rule chip_stats:
     CELE2_n=$(grep CELE2 {input[1]} | wc -l)
     HIM17_CELE2_overlap=$(grep CELE2 {input[1]} | intersectBed -a stdin -b {input[0]} -u | wc -l)
     HIM17_CELE2_fraction=$(awk -v ovlp="$HIM17_CELE2_overlap" -v rep="$CELE2_n" 'BEGIN{{print ovlp/rep}}')
-    m1m2_n=$(wc -l < {input[3]})
+    m1m2_n=$(wc -l < {input[2]})
     HIM17_m1m2_overlap=$(intersectBed -a {input[2]} -b {input[0]} -u | wc -l)
     HIM17_m1m2_fraction=$(awk -v ovlp="$HIM17_m1m2_overlap" -v rep="$m1m2_n" 'BEGIN{{print ovlp/rep}}')
     echo -e "HIM-17_peak_n\t"$HIM17_peak_n"\t"$HIM17_CERP2_overlap"\t"$HIM17_CERP2_fraction"\t"$HIM17_CELE2_overlap"\t"$HIM17_CELE2_fraction"\t"$HIM17_m1m2_overlap"\t"$HIM17_m1m2_fraction >> {output}
@@ -260,7 +262,9 @@ rule star:
   output:
     'data/elegans/rnaseq/alignment/{sample}.Aligned.sortedByCoord.out.bam',
     'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str1.out.wig',
-    'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str2.out.wig'
+    'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str2.out.wig',
+    'data/elegans/rnaseq/alignment/{sample}.Signal.Unique.str1.out.wig',
+    'data/elegans/rnaseq/alignment/{sample}.Signal.Unique.str2.out.wig',
   params:
     'data/elegans/rnaseq/alignment/{sample}.'
   resources:
@@ -275,14 +279,20 @@ rule bigwig_generator:
   input:
     'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str1.out.wig',
     'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str2.out.wig',
+    'data/elegans/rnaseq/alignment/{sample}.Signal.Unique.str1.out.wig',
+    'data/elegans/rnaseq/alignment/{sample}.Signal.Unique.str2.out.wig',
     'species/elegans/genome/elegans.chrom.sizes.txt'
   output:
     'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str1.out.bw',
-    'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str2.out.bw'
+    'data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str2.out.bw',
+    'data/elegans/rnaseq/alignment/{sample}.Signal.Unique.str1.out.bw',
+    'data/elegans/rnaseq/alignment/{sample}.Signal.Unique.str2.out.bw',
   shell:
     '''
-    wigToBigWig {input[0]} {input[2]} {output[0]}
-    wigToBigWig {input[1]} {input[2]} {output[1]}
+    wigToBigWig {input[0]} {input[4]} {output[0]}
+    wigToBigWig {input[1]} {input[4]} {output[1]}
+    wigToBigWig {input[2]} {input[4]} {output[2]}
+    wigToBigWig {input[3]} {input[4]} {output[2]}
     '''
 
 
@@ -290,13 +300,17 @@ rule merged_rnaseq_tracks:
   input:
     'data/elegans/rnaseq/alignment/elegans_{sample}_rep1.Signal.UniqueMultiple.str{strand}.out.bw',
     'data/elegans/rnaseq/alignment/elegans_{sample}_rep2.Signal.UniqueMultiple.str{strand}.out.bw',
+    'data/elegans/rnaseq/alignment/elegans_{sample}_rep1.Signal.Unique.str{strand}.out.bw',
+    'data/elegans/rnaseq/alignment/elegans_{sample}_rep2.Signal.Unique.str{strand}.out.bw',
   output:
     'data/elegans/rnaseq/tracks/elegans_{sample}_merged.Signal.UniqueMultiple.str{strand}.out.bw',
+    'data/elegans/rnaseq/tracks/elegans_{sample}_merged.Signal.Unique.str{strand}.out.bw',
   resources:
     cpus=6
   shell:
     '''
     bigwigCompare --bigwig1 {input[0]} --bigwig2 {input[1]} --operation mean -p {resources.cpus} -o {output[0]} -of bigwig -bs 1
+    bigwigCompare --bigwig1 {input[2]} --bigwig2 {input[3]} --operation mean -p {resources.cpus} -o {output[1]} -of bigwig -bs 1
     '''
 
 

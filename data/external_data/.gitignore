@@ -1,0 +1,9 @@
+# 
+/*
+# except
+!.gitignore
+!annotatedPeak.bed
+!briggsae.other_caenorhabditis.orthologs.id.gz
+!elegans.other_caenorhabditis.orthologs.id.gz
+!elegans.other_nematodes.orthologs.id.gz
+!serizay_RE_annotation.txt

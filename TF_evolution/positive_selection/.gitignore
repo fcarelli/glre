@@ -1,0 +1,12 @@
+# Ignore everything in this directory
+/*
+# Except this file
+!.gitignore
+!/branch_site_alt
+!/branch_site_null
+!/HIM17.all.tree
+!/HIM17_cdna.all.fa
+!/HIM17_prot.all.fa
+
+
+

@@ -1,0 +1,6 @@
+# 
+/*
+# except
+!.gitignore
+!*.snakefile
+!*.yaml

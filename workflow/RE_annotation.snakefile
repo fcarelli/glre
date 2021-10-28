@@ -103,40 +103,6 @@ rule motif_mapping:
     awk 'BEGIN{{OFS="\t";}}{{if ($5 == "m1-_m2-" || $5 == "m2+_m1+") print $1, $2, $3, $4, "tandem_m2m1", $6; else if ($5 == "m1+_m2-" || $5 == "m2+_m1-") print $1, $2, $3, $4, "convergent", $6; else if ($5 == "m1+_m2+" || $5 == "m2-_m1-") print $1, $2, $3, $4, "tandem_m1m2", $6; else if ($5 == "m1-_m2+" || $5 == "m2-_m1+") print $1, $2, $3, $4, "divergent", $6}}' {output.m1m2_orientation} > {output.m1m2_pairs}
     '''
 
-rule motif_pair_GL_promoter_enrichment:
-  input:
-    'RE_annotation/reg_elements_all.elegans.gl_specific.bed',
-    'species/elegans/genome/elegans.chrom.sizes.txt',
-    'species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.bed',
-    'motif_enrichment/elegans/elegans.m1m2_clusters.bed',
-  output:
-    'RE_shuffling/coding_prom_GL.bed',
-    'RE_shuffling/coding_prom_GL.shuffle.bed',
-    'RE_shuffling/coding_prom_GL.shuffling.results',
-    'plots/m1m2_permutation_test.pdf',
-  params:
-    'RE_shuffling/coding_prom_GL.shuffle',
-  shell:
-    '''
-    grep coding_promoter {input[0]} > {output[0]}
-    for i in {{1..1000}}
-    do
-    shuffleBed -i {output[0]} -g {input[1]} -chrom -noOverlapping -excl {input[2]} > {output[1]}
-    for arrangement in divergent convergent tandem_m1m2 tandem_m2m1
-    do
-    grep $arrangement {input[3]} | sort -k 1,1 -k2,2n | intersectBed -a {output[1]} -b stdin -u | wc -l >> {params}.$arrangement
-    done
-    done
-    echo -e "hits\thigher_in_shuffled" > {output[2]}
-    for arrangement in divergent convergent tandem_m1m2 tandem_m2m1
-    do
-    arrangement_hits=$(grep $arrangement {input[3]} | sort -k 1,1 -k2,2n | intersectBed -a {output[0]} -b stdin -u | wc -l)
-    higher_in_shuffled=$(awk -v var="$arrangement_hits" '{{if ($1 >= var) print}}' {params}.$arrangement | wc -l)
-    echo -e $arrangement"\t"$arrangement_hits"\t"$higher_in_shuffled >> {output[2]}
-    done
-    Rscript scripts/m1m2_permutation.R
-    '''
-
 
 rule motif_pair_stats:
   input:

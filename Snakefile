@@ -27,7 +27,6 @@ include: 'workflow/results_plots.snakefile'
 rule all:
   input:
     expand('motif_enrichment/{sample}/{sample}.m1m2_clusters.arrangements_by_distance.summary', sample=ALL_SPECIES),
-    'RE_shuffling/coding_prom_GL.shuffling.results',
     expand('data/external_data/atac/peaks/elegans.{sample}.{rep}/elegans.{sample}.{rep}_treat_pileup.sorted.bw', sample=EXTERNAL_ATAC, rep=REPS),
     expand('data/external_data/atac/yapc/elegans.{sample}.smooth_100_yapc_0.001.bed', sample=EXTERNAL_ATAC),
     'plots/ATAC_coverage_GL_promoters_elegans.pdf',
@@ -53,7 +52,6 @@ rule all:
     expand('data/elegans/chipseq/yapc/{sample}.smooth_100_yapc_coverage.bw', sample=config["chip_sample_names"]),
     'chip_stats/chip_stats.txt',
     expand('data/elegans/rnaseq/fastq/{sample}.r1.fq.gz', sample=config["rnaseq_samples"]),
-    expand('chip_stats/{sample}.motif_stats.txt', sample=config["chip_sample_names"]),
     expand('meme/{sample}.nomotif.enrichment', sample=config["chip_sample_names"]),
     expand('data/elegans/rnaseq/alignment/{sample}.Signal.UniqueMultiple.str1.out.bw', sample=config["rnaseq_samples"]),
     expand('data/elegans/rnaseq/tracks/elegans_{sample}_merged.Signal.UniqueMultiple.str{strand}.out.bw', sample=RNASEQ_SAMPLES, strand=STRANDS),
@@ -68,8 +66,6 @@ rule all:
     'RE_features/reg_elements_all.briggsae.gl_specific.promoters.m1m2.nuc',
     'RE_conservation/conservation_statistics.txt',
     'RE_conservation_all/conservation_statistics.txt',
-    'RE_conservation/promoters_GL_m1m2.briggsae.by_type.summary',
-    'RE_conservation/promoters_GL_m1m2.elegans.by_type.summary',
     expand('data/external_data/rnaseq/elegans/kallisto/{sample}/abundance.genes.txt', sample=config['elegans_external_rnaseq_samples']),
     'data/external_data/rnaseq/elegans/gene_expression.stages.txt',
     'data/external_data/rnaseq/elegans/gene_expression.pgc.txt',
@@ -77,7 +73,6 @@ rule all:
     'motif_conservation/elegans.tandem_m2m1.GLRE.heat.pdf',
     'plots/RE_ATAC.elegans.heatmap.pdf',
     'plots/RE_m1m2_ATAC.heatmap.pdf',
-    'test_him17_cov/promoters_elegans_HIM17.heatmap.pdf',
     'plots/RE_m1m2_external_ATAC.heatmap.pdf',
     expand('plots/{sample}.m1m2.all_genes.profile.pdf', sample=SPECIES_MOTIF_PLOTS),
     'plots/GL_promoters_m1m2_external_ATAC.heatmap.pdf',
@@ -90,7 +85,6 @@ rule all:
     'intact_repeats/elegans/elegans_CERP2.no_HIM17.clw.hmm',
     'plots/TT_periodicity_CERP2_elements.pdf',
     'plots/TT_periodicity_CELE2_elements.pdf',
-    'plots/m1m2_permutation_test.pdf',
     'RE_conservation_all/conserved_vs_species_specific_promoters.m1m2_statistics.txt',
     'plots/conserved_sp_specific_promoters.m1m2_overlap.pdf',
     expand('CELE2_CERP2_other_species/{sample}.summary', sample=REPEAT_SEARCH_SPECIES),
@@ -100,6 +94,8 @@ rule all:
     'plots/HIM17_peaks_m1m2_overlap.pdf',
     'plots/him17_vs_wt_volcano.pdf',
     'plots/GO_enrichment_direct_targets.pdf',
+    'TF_evolution/positive_selection/branch_site_alt/HIM17.all.modelA.alt',
+    'TF_evolution/positive_selection/branch_site_null/HIM17.all.modelA.null',
 
 
     
