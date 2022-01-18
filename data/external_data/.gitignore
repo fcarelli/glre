@@ -1,7 +1,6 @@
 # 
 /*
 # except
-!.gitignore
 !annotatedPeak.bed
 !briggsae.other_caenorhabditis.orthologs.id.gz
 !elegans.other_caenorhabditis.orthologs.id.gz
