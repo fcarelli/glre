@@ -21,11 +21,11 @@ rule modencode_him17_chip:
     'data/external_data/chipseq/peaks/'
   shell:
     '''
-    wget ftp://data.modencode.org/all_files/cele-raw-4/3916_SDQ0801_HIM17_FEM2_AD_r1_export.fq.gz -O {output[0]}
+    curl -o {output[0]} ftp://data.modencode.org/all_files/cele-raw-4/3916_SDQ0801_HIM17_FEM2_AD_r1_export.fq.gz
     bwa mem -t {resources.cpus} {params[0]} {output[0]} | samtools view -@ {resources.cpus} -q 10 -bT {input[5]} - > {output[1]}.temp
     samtools sort -@ {resources.cpus} {output[1]}.temp > {output[1]}
     rm {output[1]}.temp
-    mkdir {params[1]}him17_rep1
+    mkdir -p {params[1]}
     macs2 callpeak --bdg --SPMR --gsize ce -n him17_rep1 --outdir {params[1]}him17_rep1 -t {output[1]}
     '''
 
@@ -292,7 +292,7 @@ rule bigwig_generator:
     wigToBigWig {input[0]} {input[4]} {output[0]}
     wigToBigWig {input[1]} {input[4]} {output[1]}
     wigToBigWig {input[2]} {input[4]} {output[2]}
-    wigToBigWig {input[3]} {input[4]} {output[2]}
+    wigToBigWig {input[3]} {input[4]} {output[3]}
     '''
 
 

@@ -33,7 +33,7 @@ rule ce_gl_elements_annotation:
     GL_RE = "RE_annotation/reg_elements_all.elegans.gl_specific.bed",
     nonGL_RE = "RE_annotation/reg_elements_all.elegans.not_gl_specific.bed"
   conda:
-    "env/diffbind.yaml"
+    "env/diffbind.yml"
   shell:
     '''
     sed '1d' {input} | awk -F'[\t=;]' 'BEGIN{{OFS="\t";}}{{print $1, $2, $3, "ce.re" NR "." $7, $(NF-4), $(NF-3)}}' > {output.parsed_RE}
@@ -49,26 +49,45 @@ rule ce_gl_motif_enrichment:
     GL_RE = "RE_annotation/reg_elements_all.elegans.gl_specific.bed",
     nonGL_RE = "RE_annotation/reg_elements_all.elegans.not_gl_specific.bed"
   output:
-    GL_RE_fasta = temp("RE_annotation/reg_elements_all.elegans.gl_specific.fasta"),
-    nonGL_RE_fasta = temp("RE_annotation/reg_elements_all.elegans.not_gl_specific.fasta"),
-    meme_results_out = "meme/elegans.GL_specific_vs_nonGL_specific/meme_out/meme.txt",
-    meme_results_tsv = "meme/elegans.GL_specific_vs_nonGL_specific/summary.tsv",
+    GL_RE_fasta = temp("RE_annotation/promoters.elegans.gl_specific.fasta"),
+    nonGL_RE_fasta = temp("RE_annotation/promoters.elegans.not_gl_specific.fasta"),
+    meme_results_out = "meme/elegans.GL_specific_vs_nonGL_specific_promoters/meme_out/meme.txt",
+    meme_results_tsv = "meme/elegans.GL_specific_vs_nonGL_specific_promoters/summary.tsv",
   params:
-    directory("meme/elegans.GL_specific_vs_nonGL_specific"),
+    directory("meme/elegans.GL_specific_vs_nonGL_specific_promoters"),
   resources:
     ntasks=6
   shell:
     '''
-    fastaFromBed -fi {input.genome} -bed {input.GL_RE} -fo {output.GL_RE_fasta} -s
-    fastaFromBed -fi {input.genome} -bed {input.nonGL_RE} -fo {output.nonGL_RE_fasta} -s
+    grep coding_promoter {input.GL_RE} | fastaFromBed -fi {input.genome} -bed stdin -fo {output.GL_RE_fasta} -s
+    grep coding_promoter {input.nonGL_RE} | fastaFromBed -fi {input.genome} -bed stdin -fo {output.nonGL_RE_fasta} -s
     meme-chip -oc {params} -neg {output.nonGL_RE_fasta} -spamo-skip -fimo-skip -meme-p {resources.ntasks} -meme-nmotifs 6 -meme-minw 5 -meme-maxw 20 -dreme-m 0 {output.GL_RE_fasta}
+    '''
+
+
+rule enriched_motifs:
+  input:
+    meme_results = "meme/elegans.GL_specific_vs_nonGL_specific_promoters/meme_out/meme.txt",
+    meme_summary = "meme/elegans.GL_specific_vs_nonGL_specific_promoters/summary.tsv",
+  output:
+    meme_m1 = "motif_enrichment/m1.meme",
+    meme_m2 = "motif_enrichment/m2.meme",
+    meme_m3 = "motif_enrichment/m3.meme",
+  shell:
+    '''
+    m1_consensus=$(sed -n 3p {input.meme_summary} | awk '{{print $3}}')
+    m2_consensus=$(sed -n 4p {input.meme_summary} | awk '{{print $3}}')
+    m3_consensus=$(sed -n 2p {input.meme_summary} | awk '{{print $3}}')
+    meme-get-motif -id $m1_consensus {input.meme_results} > {output.meme_m1}
+    meme-get-motif -id $m2_consensus -rc {input.meme_results} > {output.meme_m2}
+    meme-get-motif -id $m3_consensus {input.meme_results} > {output.meme_m3}
     '''
 
 
 rule motif_mapping:
   input:
-    meme_results = "meme/elegans.GL_specific_vs_nonGL_specific/meme_out/meme.txt",
-    meme_summary = "meme/elegans.GL_specific_vs_nonGL_specific/summary.tsv",
+    meme_m1 = "motif_enrichment/m1.meme",
+    meme_m2 = "motif_enrichment/m2.meme",
     genome = 'species/{sample}/genome/{sample}.fa',
     chr_size = 'species/{sample}/genome/{sample}.chrom.sizes.txt'
   output:
@@ -84,10 +103,8 @@ rule motif_mapping:
     m1m2_pairs = "motif_enrichment/{sample}/{sample}.m1m2_clusters.bed"
   shell:
     '''
-    m1_consensus=$(sed -n 3p {input.meme_summary} | awk '{{print $3}}')
-    m2_consensus=$(sed -n 4p {input.meme_summary} | awk '{{print $3}}')
-    fimo --max-stored-scores 1000000 --motif $m1_consensus --oc {output.fimo_m1} --thresh 1e-3 {input.meme_results} {input.genome}
-    fimo --max-stored-scores 1000000 --motif $m2_consensus --oc {output.fimo_m2} --thresh 1e-3 {input.meme_results} {input.genome}
+    fimo --max-stored-scores 1000000 --oc {output.fimo_m1} --thresh 1e-3 {input.meme_m1} {input.genome}
+    fimo --max-stored-scores 1000000 --oc {output.fimo_m2} --thresh 1e-3 {input.meme_m2} {input.genome}
     #sed '1d' {output.fimo_m1}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($7 > 1) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output.m1_bed}
     #sed '1d' {output.fimo_m2}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($7 > 5) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output.m2_bed}
     sed '1d' {output.fimo_m1}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($8 < 0.0005) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output.m1_bed}
@@ -242,15 +259,18 @@ rule ce_motif_repeats_overlap:
   input:
     'species/elegans/repeats_dfam/elegans_dfam.repeats.id.bed',
     'motif_enrichment/elegans/elegans.m1m2_clusters.bed',
+    'motif_enrichment/elegans/elegans.m1.bed',
+    'motif_enrichment/elegans/elegans.m2.bed',
   output:
     temp('motif_enrichment/elegans/repeats_all.txt'),
     'motif_enrichment/elegans/repeat_m1m2_overlap.summary',
     temp('motif_enrichment/elegans/current_repeat'),
+    temp('motif_enrichment/elegans/other_arrangements.bed'),
   shell:
     '''
     cut -f 4 {input[0]} | sort | uniq > {output[0]}
     header="repeat\ttotal_repeats\t"
-    for arrang in convergent divergent tandem_m1m2 tandem_m2m1
+    for arrang in convergent divergent tandem_m1m2 tandem_m2m1 single_motif no_motif
     do
     header+=$arrang"\t"
     done
@@ -262,8 +282,11 @@ rule ce_motif_repeats_overlap:
     newline+=$(wc -l < {output[2]})"\t"
     for arrang in convergent divergent tandem_m1m2 tandem_m2m1
     do
-    newline+=$(grep $arrang {input[1]} | intersectBed -a {output[2]} -b stdin -u | wc -l)"\t"
+    grep -v $arrang {input[1]} > {output[3]}
+    newline+=$(grep $arrang {input[1]} | intersectBed -a {output[2]} -b stdin -u | intersected -a stdin -b {output[3]} -v | wc -l)"\t"
     done
+    newline+=$(intersectBed -a {output[2]} -b {input[1]} -v | intersectBed -a stdin -b {input[2]} {input[3]} -u | wc -l)"\t"
+    newline+=$(intersectBed -a {output[2]} -b {input[2]} {input[3]} -v | wc -l)"\t"
     echo -e ${{newline::-1}} >> {output[1]}
     done < {output[0]}
     '''
@@ -367,8 +390,7 @@ rule ce_RE_GC_content:
 
 rule motif_3_elegans:
   input:
-    meme_results = "meme/elegans.GL_specific_vs_nonGL_specific/meme_out/meme.txt",
-    meme_summary = "meme/elegans.GL_specific_vs_nonGL_specific/summary.tsv",
+    meme_m3 = "motif_enrichment/m3.meme",
     genome = "species/elegans/genome/elegans.fa",
     GL_RE = "RE_annotation/reg_elements_all.elegans.gl_specific.bed",
     nonGL_RE = "RE_annotation/reg_elements_all.elegans.not_gl_specific.bed",
@@ -379,9 +401,8 @@ rule motif_3_elegans:
     m3_stats = "motif_enrichment/elegans/elegans.motif3_association.txt"
   shell:
     '''
-    m3_consensus=$(sed -n 2p {input.meme_summary} | awk '{{print $3}}')
-    fimo --max-stored-scores 1000000 --motif $m3_consensus --oc {output.fimo_m3} --thresh 1e-4 {input.meme_results} {input.genome}
-    sed '1d' {output.fimo_m3}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output.m3_bed}
+    fimo --max-stored-scores 1000000 --oc {output.fimo_m3} --thresh 1e-3 {input.meme_m3} {input.genome}
+    sed '1d' {output.fimo_m3}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($8 < 0.0005) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output.m3_bed}
     echo -e "GL_with_m3\tGL_without_m3\tnonGL_with_m3\tnonGL_without_m3" > {output.m3_stats}
     GL_with_m3=$(intersectBed -a {input.GL_RE} -b {output.m3_bed} -u | intersectBed -a {input.m1m2_pairs} -b stdin -u | cut -f 5 | sort | uniq -c | grep -E 'divergent|tandem_m2m1')
     GL_without_m3=$(intersectBed -a {input.GL_RE} -b {output.m3_bed} -v | intersectBed -a {input.m1m2_pairs} -b stdin -u | cut -f 5 | sort | uniq -c | grep -E 'divergent|tandem_m2m1')
@@ -394,17 +415,15 @@ rule motif_3_elegans:
 
 rule motif_3_other_species:
   input:
-    meme_results = "meme/elegans.GL_specific_vs_nonGL_specific/meme_out/meme.txt",
-    meme_summary = "meme/elegans.GL_specific_vs_nonGL_specific/summary.tsv",
+    meme_m3 = "motif_enrichment/m3.meme",
     genome = "species/{sample}/genome/{sample}.fa",
   output:
     fimo_m3 = directory("motif_enrichment/{sample}/fimo_{sample}_m3"),
     m3_bed = "motif_enrichment/{sample}/{sample}.m3.bed",
   shell:
     '''
-    m3_consensus=$(sed -n 2p {input.meme_summary} | awk '{{print $3}}')
-    fimo --max-stored-scores 1000000 --motif $m3_consensus --oc {output.fimo_m3} --thresh 1e-4 {input.meme_results} {input.genome}
-    sed '1d' {output.fimo_m3}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output.m3_bed}
+    fimo --max-stored-scores 1000000 --oc {output.fimo_m3} --thresh 1e-3 {input.meme_m3} {input.genome}
+    sed '1d' {output.fimo_m3}/fimo.tsv | sed '/^$/d' | sed '/^#/d' | awk 'BEGIN{{OFS="\t";}}{{if ($8 < 0.0005) print $3, $4, $5, $7, 0, $6}}' | sort -k 1,1 -k2,2n > {output.m3_bed}
     '''
 
 
@@ -454,6 +473,8 @@ rule boeck_expression_parser:
     boeck_data_postemb = "data/external_data/boeck_exp_data.postembryonic.txt",
   params:
     "data/external_data/boeck_exp_data"
+  resources:
+    download_streams=1
   shell:
     '''
     wget ftp://ftp.wormbase.org/pub/wormbase/releases/WS275/species/c_elegans/PRJNA13758/annotation/c_elegans.PRJNA13758.WS275.geneIDs.txt.gz -O {output.gene_ids}.gz; gunzip {output.gene_ids}.gz
@@ -468,6 +489,8 @@ rule boeck_unified_exp_parser:
   output:
     temp("data/external_data/boeck_unified_exp_data.to_parse.txt"),
     "data/external_data/boeck_unified_exp_data.txt",
+  resources:
+    download_streams=1
   shell:
     '''
     wget https://genome.cshlp.org/content/suppl/2016/09/20/gr.202663.115.DC1/Supplemental_Table_S13.gz -O {output[0]}.gz; gunzip {output[0]}.gz
@@ -507,9 +530,11 @@ rule packer_expression_parser:
     packer_data_parsed = "data/external_data/packer_exp_data.germline.txt"
   params:
     "data/external_data"
+  resources:
+    download_streams=1
   shell:
     '''
-    wget https://science.sciencemag.org/highwire/filestream/731368/field_highwire_adjunct_files/3/aax1971_Tables_S7_S8_S10_S11_S14.zip -O {output.packer_data_all}; unzip -d {params} {output.packer_data_all}
+    wget https://www.science.org/doi/suppl/10.1126/science.aax1971/suppl_file/aax1971_tables_s7_s8_s10_s11_s14.zip -O {output.packer_data_all}; unzip -d {params} {output.packer_data_all}
     gunzip {params}/aax1971_Table_S7.gz; mv {params}/aax1971_Table_S7 {output.packer_data}
     python scripts/packer_data_parser.py {output.packer_data} {output.packer_data_parsed}
     '''
@@ -565,7 +590,7 @@ rule DESeq_GL_gene_annotation_ce:
     "gene_annotation/elegans.genes_downregulated_glp1_vs_wt.txt",
     "gene_annotation/elegans.genes_upregulated_glp1_vs_wt.txt",
   conda:
-    "env/diffbind.yaml"
+    "env/diffbind.yml"
   shell:
     '''
     Rscript scripts/DESeq_lcap_ce.R
@@ -606,7 +631,7 @@ rule DESeq_GL_gene_annotation_cb:
     "gene_annotation/briggsae.genes_downregulated_glp1_vs_wt.txt",
     "gene_annotation/briggsae.genes_upregulated_glp1_vs_wt.txt",
   conda:
-    "env/diffbind.yaml"
+    "env/diffbind.yml"
   shell:
     '''
     Rscript scripts/DESeq_lcap_cb.R
@@ -619,6 +644,8 @@ rule external_atac_download:
     'data/external_data/atac/fastq/elegans.pgc.rep2.fq.gz',
     'data/external_data/atac/fastq/elegans.adult_gl.rep1.fq.gz',
     'data/external_data/atac/fastq/elegans.adult_gl.rep2.fq.gz',
+  resources:
+    download_streams=1
   shell:
     '''
     wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR577/003/SRR5772133/SRR5772133.fastq.gz -O {output[0]}

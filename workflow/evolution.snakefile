@@ -10,6 +10,8 @@ rule extra_species_THAP_analysis:
     afra='species/afra/protein_sequences/afra.protein.longest_isoform.fa',
     panamensis='species/panamensis/protein_sequences/panamensis.protein.longest_isoform.fa',
     virilis='species/virilis/protein_sequences/virilis.protein.longest_isoform.fa',
+  resources:
+    download_streams=1
   shell:
     '''
     wget ftp://ftp.ebi.ac.uk/pub/databases/wormbase/parasite/releases/WBPS15/species/haemonchus_placei/PRJEB509/haemonchus_placei.PRJEB509.WBPS15.protein.fa.gz -O {output.placei}.to_clean.gz; gunzip {output.placei}.to_clean.gz; awk 'BEGIN{{FS=" ";}}{{if ($1 ~ ">") print $1; else print $0}}' {output.placei}.to_clean | fold -s -w60 > {output.placei}.clean; rm {output.placei}.to_clean; python scripts/other_species_protein_fix.py {output.placei}.clean {output.placei}; rm {output.placei}.clean
@@ -79,6 +81,8 @@ rule him17_orthologs:
     samtools faidx {output[2]} $HIM17_ortho | sed '1d' >> {output[1]}
     fi
     fi
+    touch {output[2]}
+    touch {output[3]}
     '''
 
 

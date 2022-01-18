@@ -3,14 +3,16 @@ source("scripts/common_R_functions.R")
 
 pdf(file = "plots/m1m2_motif_arrangements.all_species.pdf", width = 10, height = 10)
 
-all_species_full_names = c("C. elegans", "C. inopinata", "C. briggsae", "C. nigoni", "C. remanei", "C. becei", "C. quiockensis", "C. ovis", "C. monodelphis", "H. contortus", "A. ceylanicum", "O. tipulae", "H. bacteriophora", "P. pacificus", "P. redivivus")
+all_species_full_names = c("C. elegans", "C. inopinata", "C. briggsae", "C. nigoni", "C. remanei", "C. becei", "C. quiockensis", "C. bovis", "C. monodelphis", "H. contortus", "A. ceylanicum", "O. tipulae", "H. bacteriophora", "P. pacificus", "P. redivivus")
 all_species = c("elegans", "inopinata", "briggsae", "nigoni", "remanei", "becei", "quiockensis", "bovis", "monodelphis", "contortus", "ceylanicum", "tipulae", "bacteriophora", "pacificus", "redivivus")
 par(mfrow=c(3,5), oma=c(0,0,0,0), mar=c(4,4,3,3))
 
 for (species in c(1:length(all_species))){
   m1m2_all=read.table(paste("motif_enrichment/", all_species[species], "/", all_species[species], ".m1m2_clusters.arrangements_all.summary", sep=""), header=T)
-  k=barplot(m1m2_all$N_clusters, las=1, names.arg=m1m2_all$motif_arrangement,
-            col=c("grey90", "grey60", "grey30", "grey1"), main = paste(all_species_full_names[species], "m1m2 pairs"), ylab = "nº of m1m2 pairs", ylim =c(0, 5000))
+  chr_size=read.table(paste("species/", all_species[species], "/genome/", all_species[species], ".chrom.sizes.txt", sep=""))
+  genome_size=sum(chr_size$V2)
+  k=barplot(m1m2_all$N_clusters/genome_size*1000000, las=1, names.arg=m1m2_all$motif_arrangement,
+            col=c("grey90", "grey60", "grey30", "grey1"), main = all_species_full_names[species], ylab = "m1m2 pairs/Mbp", ylim=c(0, 50))
 }
 dev.off()
 

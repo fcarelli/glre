@@ -26,6 +26,7 @@ include: 'workflow/results_plots.snakefile'
 
 rule all:
   input:
+    'meme/elegans.GL_specific_vs_nonGL_specific_promoters/meme_out/meme.txt',
     expand('motif_enrichment/{sample}/{sample}.m1m2_clusters.arrangements_by_distance.summary', sample=ALL_SPECIES),
     expand('data/external_data/atac/peaks/elegans.{sample}.{rep}/elegans.{sample}.{rep}_treat_pileup.sorted.bw', sample=EXTERNAL_ATAC, rep=REPS),
     expand('data/external_data/atac/yapc/elegans.{sample}.smooth_100_yapc_0.001.bed', sample=EXTERNAL_ATAC),
@@ -61,7 +62,7 @@ rule all:
     'DE_analysis/genes_downregulated_him17_vs_N2.direct.txt',
     'RE_features/briggsae.motif_GL_overlap.summary',
     'promoter_annotation/promoters_all.briggsae.bed',
-    'meme/briggsae.GL_specific_vs_nonGL_specific',
+    'meme/briggsae.GL_specific_vs_nonGL_specific_promoters/meme_out/meme.txt',
     'meme/briggsae.GL_specific_m1m2_vs_nonGL_specific_m1m2',
     'RE_features/reg_elements_all.briggsae.gl_specific.promoters.m1m2.nuc',
     'RE_conservation/conservation_statistics.txt',
@@ -69,9 +70,11 @@ rule all:
     expand('data/external_data/rnaseq/elegans/kallisto/{sample}/abundance.genes.txt', sample=config['elegans_external_rnaseq_samples']),
     'data/external_data/rnaseq/elegans/gene_expression.stages.txt',
     'data/external_data/rnaseq/elegans/gene_expression.pgc.txt',
-    'plots/HIM17_CELE2_CERP2_m1m2_RE.heatmap.repeat_sorted.pdf',
-    'motif_conservation/elegans.tandem_m2m1.GLRE.heat.pdf',
+    'plots/HIM17_atac_CELE2_CERP2.heatmap.repeat_sorted.pdf',
+#    'plots/HIM17_CELE2_CERP2_m1m2_RE.heatmap.repeat_sorted.pdf',
+    'motif_conservation/elegans.tandem_m2m1.GLpromoter.heat.pdf',
     'plots/RE_ATAC.elegans.heatmap.pdf',
+    'plots/CERP2_CELE2_n_other_species.pdf',
     'plots/RE_m1m2_ATAC.heatmap.pdf',
     'plots/RE_m1m2_external_ATAC.heatmap.pdf',
     expand('plots/{sample}.m1m2.all_genes.profile.pdf', sample=SPECIES_MOTIF_PLOTS),
@@ -83,8 +86,8 @@ rule all:
     'intact_repeats/elegans/elegans_CELE2.intact.clw.hmm',
     'intact_repeats/inactive_CERP2_elegans.hmm',
     'intact_repeats/elegans/elegans_CERP2.no_HIM17.clw.hmm',
-    'plots/TT_periodicity_CERP2_elements.pdf',
-    'plots/TT_periodicity_CELE2_elements.pdf',
+    'plots/TT_periodicity_CERP2_intact.periodicDNA.pdf',
+    'plots/TT_periodicity_CELE2_intact.periodicDNA.pdf',
     'RE_conservation_all/conserved_vs_species_specific_promoters.m1m2_statistics.txt',
     'plots/conserved_sp_specific_promoters.m1m2_overlap.pdf',
     expand('CELE2_CERP2_other_species/{sample}.summary', sample=REPEAT_SEARCH_SPECIES),
@@ -94,10 +97,11 @@ rule all:
     'plots/HIM17_peaks_m1m2_overlap.pdf',
     'plots/him17_vs_wt_volcano.pdf',
     'plots/GO_enrichment_direct_targets.pdf',
+    'plots/m1m2_divergent_distance.pdf',
     'TF_evolution/positive_selection/branch_site_alt/HIM17.all.modelA.alt',
     'TF_evolution/positive_selection/branch_site_null/HIM17.all.modelA.null',
-
-
+    'coopted_CERP2_conservation/conservation.summary',
+    'coopted_CERP2_conservation/synteny_preservation_summary',
+    'plots/motif_pairs_repeat_consensi_aln_score.pdf',
     
-
 

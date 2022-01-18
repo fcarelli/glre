@@ -75,12 +75,12 @@ dev.off()
 # comparison of (not )m1m2-associated (not )germline-specific gene expression using RNAseq data from PGCs (Lee et al. 2017)
 pgc_exp = read.table("data/external_data/rnaseq/elegans/gene_expression.pgc.txt")
 pgc_exp_avg = data.frame(cbind(rowMeans(pgc_exp[,c(1:4)]), rowMeans(pgc_exp[,c(5:7)])))
-pgc_exp_avg = pgc_exp_avg+1e-2
+pgc_exp_avg = pgc_exp_avg+1
 names(pgc_exp_avg) = c("starved", "fed")
 
 postdev_exp = read.table("data/external_data/rnaseq/elegans/gene_expression.stages.txt")
 postdev_exp_avg = data.frame(cbind(rowMeans(postdev_exp[,c(1:3)]), postdev_exp[,c(4:8)]))
-postdev_exp_avg = postdev_exp_avg+1e-2
+postdev_exp_avg = postdev_exp_avg+1
 names(postdev_exp_avg) = c("L1", "L2", "L3", "L4", "lL4", "YA")
 
 
@@ -93,60 +93,23 @@ par(mfrow=c(1,1), mar=c(4, 4, 3, 2), oma=c(2,0,0,0))
 
 k=vioplot(log2(pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_m1m2_gl$V1]),
           log2(pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L1[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L1[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L2[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L2[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L3[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L3[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L4[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L4[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
           log2(postdev_exp_avg$lL4[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
           log2(postdev_exp_avg$lL4[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
           log2(postdev_exp_avg$YA[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$YA[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),las = 1,
-          main = "expression unique GL promoter genes", ylab = "log2 TPM", xaxt = "n", border = NA, drawRect = F,
+          log2(postdev_exp_avg$YA[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]), las = 1,
+          main = "expression unique GL promoter genes", ylab = "log2 TPM+1", xaxt = "n",
           col = rep(c(t_col("darkorchid3"), t_col("grey")), 7))
-stripchart(list(log2(pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_m1m2_gl$V1]),
-                log2(pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_no_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L1[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L1[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L2[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L2[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L3[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L3[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L4[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-                log2(postdev_exp_avg$L4[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-                log2(postdev_exp_avg$lL4[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-                log2(postdev_exp_avg$lL4[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-                log2(postdev_exp_avg$YA[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-                log2(postdev_exp_avg$YA[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1])), add=T,
-           method="jitter", jitter = 0.4, vertical = T, pch=19, col=c("darkorchid3", "grey"), cex = 0.5)
-k=vioplot(log2(pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L1[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L1[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L2[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L2[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L3[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L3[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L4[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$L4[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$lL4[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$lL4[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]),
-          log2(postdev_exp_avg$YA[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1]),
-          log2(postdev_exp_avg$YA[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1]), add=T, col = t_col(1, 100))
 
 all_tests_p = c()
 all_tests_p = append(all_tests_p, wilcox.test(pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_m1m2_gl$V1],
                                               pgc_exp_avg$starved[row.names(pgc_exp_avg) %in% unique_no_m1m2_gl$V1])$p.value)
-for (stage in c(1:6)){
+for (stage in c(5,6)){
   all_tests_p = append(all_tests_p, wilcox.test(postdev_exp_avg[row.names(postdev_exp_avg) %in% unique_m1m2_gl$V1, stage],
                                                 postdev_exp_avg[row.names(postdev_exp_avg) %in% unique_no_m1m2_gl$V1, stage])$p.value)
 }
 
-axis(1, at = seq(1.5, 13.5, by=2), labels = c("PGC", "L1", "L2", "L3", "L4", "lL4", "YA"))
-text(seq(1.5, 13.5, by=2), max(k$upper), labels = graphical_pvalue(p.adjust(all_tests_p, method="fdr")), pos = 1)
+axis(1, at = c(1.5, 3.5, 5.5), labels = c("PGC", "late L4", "YA"))
+text(c(1.5, 3.5, 5.5), max(k$upper), labels = graphical_pvalue(p.adjust(all_tests_p, method="fdr")), pos = 1)
 
 par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
 plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")

@@ -27,7 +27,7 @@ rule CERP2_CELE2_re_annotation_elegans_hmm:
   shell:
     '''
     grep CERP2 {input[0]} | fastaFromBed -fi {input[1]} -bed stdin -fo {output[0]}
-    grep CELE2 {input[0]} | fastaFromBed -fi {input[1]} -bed stdin -fo {output[0]}
+    grep CELE2 {input[0]} | fastaFromBed -fi {input[1]} -bed stdin -fo {output[1]}
     hmmalign --trim -o {output[2]} {input[2]} {output[0]}
     hmmalign --trim -o {output[3]} {input[3]} {output[1]}
     hmmbuild {output[4]} {output[2]}
@@ -260,6 +260,7 @@ rule TT_periodicity_elegans_repeats:
     'species/elegans/repeats_dfam/elegans_dfam.repeats.id.bed',
     'intact_repeats/intact_CELE2_elegans.bed',
   output:
+    temp('RE_annotation/promoters.elegans.gl_specific.bed'),
     temp('intact_repeats/elegans/elegans_divergent_m1m2.bed'),
     'intact_repeats/elegans/elegans_divergent_m1m2.GLRE.for_clustering.fa',
     'intact_repeats/elegans/elegans_divergent_m1m2.GLRE.for_clustering.TT_freq',
@@ -267,8 +268,8 @@ rule TT_periodicity_elegans_repeats:
     'intact_repeats/elegans/elegans_divergent_m1m2.inactive.for_clustering.TT_freq',
     'intact_repeats/elegans/elegans_divergent_m1m2.intact.for_clustering.fa',
     'intact_repeats/elegans/elegans_divergent_m1m2.intact.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_CERP2.GLRE.for_clustering.fa',
-    'intact_repeats/elegans/elegans_CERP2.GLRE.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CERP2.GLpromoter.for_clustering.fa',
+    'intact_repeats/elegans/elegans_CERP2.GLpromoter.for_clustering.TT_freq',
     'intact_repeats/elegans/elegans_CERP2.inactive.for_clustering.fa',
     'intact_repeats/elegans/elegans_CERP2.inactive.for_clustering.TT_freq',
     temp('intact_repeats/elegans/elegans_tandem_m2m1.bed'),
@@ -278,54 +279,63 @@ rule TT_periodicity_elegans_repeats:
     'intact_repeats/elegans/elegans_tandem_m2m1.inactive.for_clustering.TT_freq',
     'intact_repeats/elegans/elegans_tandem_m2m1.intact.for_clustering.fa',
     'intact_repeats/elegans/elegans_tandem_m2m1.intact.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_CELE2.GLRE.for_clustering.fa',
-    'intact_repeats/elegans/elegans_CELE2.GLRE.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CELE2.GLpromoter.for_clustering.fa',
+    'intact_repeats/elegans/elegans_CELE2.GLpromoter.for_clustering.TT_freq',
     'intact_repeats/elegans/elegans_CELE2.inactive.for_clustering.fa',
     'intact_repeats/elegans/elegans_CELE2.inactive.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CERP2.intact.for_clustering.fa',
+    'intact_repeats/elegans/elegans_CERP2.intact.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CELE2.intact.for_clustering.fa',
+    'intact_repeats/elegans/elegans_CELE2.intact.for_clustering.TT_freq',
   shell:
     '''
-    grep divergent {input[0]} | awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ "14bp" || $4 ~ "15bp" || $4 ~ "16bp" || $4 ~ "17bp" || $4 ~ "18bp" || $4 ~ "19bp") print $1, $2, $3, $4, 0, $6}}' > {output[0]}
-    intersectBed -a {output[0]} -b {input[1]} -u | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[1]} -s
-    python scripts/dinuleotide_count.py {output[1]} {output[2]} TT
-    intersectBed -a {output[0]} -b {input[4]} -v | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[3]} -s
-    python scripts/dinuleotide_count.py {output[3]} {output[4]} TT
-    intersectBed -a {output[0]} -b {input[5]} -u | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[5]} -s
-    python scripts/dinuleotide_count.py {output[5]} {output[6]} TT
-    grep CERP2 {input[6]} | intersectBed -a {output[0]} -b stdin -u | intersectBed -a stdin -b {input[1]} -u | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[7]} -s
-    python scripts/dinuleotide_count.py {output[7]} {output[8]} TT
-    grep CERP2 {input[6]} | intersectBed -a {output[0]} -b stdin -u | intersectBed -a stdin -b {input[4]} -v | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[9]} -s
-    python scripts/dinuleotide_count.py {output[9]} {output[10]} TT
-    grep tandem_m2m1 {input[0]} | awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ "24bp" || $4 ~ "25bp" || $4 ~ "26bp" || $4 ~ "27bp" || $4 ~ "28bp" || $4 ~ "29bp") print $1, $2, $3, $4, 0, $6}}' > {output[11]}
-    intersectBed -a {output[11]} -b {input[1]} -u | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[12]} -s
-    python scripts/dinuleotide_count.py {output[12]} {output[13]} TT
-    intersectBed -a {output[11]} -b {input[4]} -v | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[14]} -s
-    python scripts/dinuleotide_count.py {output[14]} {output[15]} TT
-    intersectBed -a {output[11]} -b {input[7]} -u | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[16]} -s
-    python scripts/dinuleotide_count.py {output[16]} {output[17]} TT
-    grep CELE2 {input[6]} | intersectBed -a {output[11]} -b stdin -u | intersectBed -a stdin -b {input[1]} -u | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[18]} -s
-    python scripts/dinuleotide_count.py {output[18]} {output[19]} TT
-    grep CELE2 {input[6]} | intersectBed -a {output[11]} -b stdin -u | intersectBed -a stdin -b {input[4]} -v | slopBed -l 0 -r 200 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[20]} -s
-    python scripts/dinuleotide_count.py {output[20]} {output[21]} TT
+    grep coding_promoter {input[1]} > {output[0]}
+    grep divergent {input[0]} | awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ "12bp" || $4 ~ "13bp" || $4 ~ "14bp" || $4 ~ "15bp" || $4 ~ "16bp" || $4 ~ "17bp") print $1, $2, $3, $4, 0, $6}}' > {output[1]}
+    intersectBed -a {output[1]} -b {input[1]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[2]} -s
+    python scripts/dinuleotide_count.py {output[2]} {output[3]} TT
+    intersectBed -a {output[1]} -b {input[4]} -v | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[4]} -s
+    python scripts/dinuleotide_count.py {output[4]} {output[5]} TT
+    intersectBed -a {output[1]} -b {input[5]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[6]} -s
+    python scripts/dinuleotide_count.py {output[6]} {output[7]} TT
+    grep CERP2 {input[6]} | intersectBed -a {output[1]} -b stdin -u | intersectBed -a stdin -b {output[0]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[8]} -s
+    python scripts/dinuleotide_count.py {output[8]} {output[9]} TT
+    grep CERP2 {input[6]} | intersectBed -a {output[1]} -b stdin -u | intersectBed -a stdin -b {input[4]} -v | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[10]} -s
+    python scripts/dinuleotide_count.py {output[10]} {output[11]} TT
+    grep CERP2 {input[6]} | intersectBed -a {output[1]} -b stdin -u | intersectBed -a stdin -b {input[5]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[23]} -s
+    python scripts/dinuleotide_count.py {output[23]} {output[24]} TT
+    grep tandem_m2m1 {input[0]} | awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ "24bp" || $4 ~ "25bp" || $4 ~ "26bp" || $4 ~ "27bp" || $4 ~ "28bp" || $4 ~ "29bp") print $1, $2, $3, $4, 0, $6}}' > {output[12]}
+    intersectBed -a {output[11]} -b {input[1]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[13]} -s
+    python scripts/dinuleotide_count.py {output[13]} {output[14]} TT
+    intersectBed -a {output[11]} -b {input[4]} -v | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[15]} -s
+    python scripts/dinuleotide_count.py {output[15]} {output[16]} TT
+    intersectBed -a {output[11]} -b {input[7]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[17]} -s
+    python scripts/dinuleotide_count.py {output[17]} {output[18]} TT
+    grep CELE2 {input[6]} | intersectBed -a {output[12]} -b stdin -u | intersectBed -a stdin -b {output[0]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[19]} -s
+    python scripts/dinuleotide_count.py {output[19]} {output[20]} TT
+    grep CELE2 {input[6]} | intersectBed -a {output[12]} -b stdin -u | intersectBed -a stdin -b {input[4]} -v | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[21]} -s
+    python scripts/dinuleotide_count.py {output[21]} {output[22]} TT
+    grep CELE2 {input[6]} | intersectBed -a {output[12]} -b stdin -u | intersectBed -a stdin -b {input[7]} -u | flankBed -l 0 -r 100 -s -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin -fo {output[25]} -s
+    python scripts/dinuleotide_count.py {output[25]} {output[26]} TT
     '''
 
 
 rule TT_plots:
   input:
-    'intact_repeats/elegans/elegans_divergent_m1m2.GLRE.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_divergent_m1m2.inactive.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_divergent_m1m2.intact.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_CERP2.GLRE.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CERP2.GLpromoter.for_clustering.TT_freq',
     'intact_repeats/elegans/elegans_CERP2.inactive.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_tandem_m2m1.GLRE.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_tandem_m2m1.inactive.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_tandem_m2m1.intact.for_clustering.TT_freq',
-    'intact_repeats/elegans/elegans_CELE2.GLRE.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CERP2.intact.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CELE2.GLpromoter.for_clustering.TT_freq',
     'intact_repeats/elegans/elegans_CELE2.inactive.for_clustering.TT_freq',
+    'intact_repeats/elegans/elegans_CELE2.intact.for_clustering.TT_freq',
   output:
-    'plots/TT_periodicity_CERP2_elements.pdf',
-    'plots/TT_periodicity_divergent_m1m2_elements.pdf',
-    'plots/TT_periodicity_CELE2_elements.pdf',
-    'plots/TT_periodicity_tandem_m2m1_elements.pdf',
+    'plots/TT_periodicity_CERP2_GLpromoter.periodicDNA.pdf',
+    'plots/TT_periodicity_CERP2_inactive.periodicDNA.pdf',
+    'plots/TT_periodicity_CERP2_intact.periodicDNA.pdf',
+    'plots/TT_periodicity_CELE2_GLpromoter.periodicDNA.pdf',
+    'plots/TT_periodicity_CELE2_inactive.periodicDNA.pdf',
+    'plots/TT_periodicity_CELE2_intact.periodicDNA.pdf',
+  conda:
+    'env/periodicdna.yml'
   shell:
     '''
     Rscript scripts/nucleosomal_TT.R
@@ -346,3 +356,46 @@ rule dfam_repeat_consensus:
     samtools faidx {output[0]} CELE2-consensus | awk -F"-" '{{print $1}}' > {output[2]}
     '''
 
+
+rule all_motif_repeat_alignment:
+  input:
+    'motif_enrichment/elegans/elegans.m1m2_clusters.bed',
+    'promoter_annotation/promoters_all.elegans.bed',
+    'species/elegans/genome/elegans.chrom.sizes.txt',
+    'species/elegans/genome/elegans.fa',
+    'data/external_data/CERP2.hmm',
+    'data/external_data/CELE2.hmm',
+  output:
+    'motif_repeat_consensus/CERP2_motifs.promoters.fa',
+    'motif_repeat_consensus/CERP2_motifs.inactive.fa',
+    'motif_repeat_consensus/CERP2_motifs.promoters.CERP2.tblout',
+    'motif_repeat_consensus/CERP2_motifs.promoters.CERP2.aln',
+    'motif_repeat_consensus/CERP2_motifs.inactive.CERP2.tblout',
+    'motif_repeat_consensus/CERP2_motifs.inactive.CERP2.aln',
+    'motif_repeat_consensus/CERP2_motifs.promoters.CERP2.scores',
+    'motif_repeat_consensus/CERP2_motifs.inactive.CERP2.scores',
+    'motif_repeat_consensus/CELE2_motifs.promoters.fa',
+    'motif_repeat_consensus/CELE2_motifs.inactive.fa',
+    'motif_repeat_consensus/CELE2_motifs.promoters.CELE2.tblout',
+    'motif_repeat_consensus/CELE2_motifs.promoters.CELE2.aln',
+    'motif_repeat_consensus/CELE2_motifs.inactive.CELE2.tblout',
+    'motif_repeat_consensus/CELE2_motifs.inactive.CELE2.aln',
+    'motif_repeat_consensus/CELE2_motifs.promoters.CELE2.scores',
+    'motif_repeat_consensus/CELE2_motifs.inactive.CELE2.scores',
+    'plots/motif_pairs_repeat_consensi_aln_score.pdf',
+  shell:
+    '''
+    grep divergent {input[0]} | awk -F"\t|_" 'BEGIN{{OFS="\t";}}{{if ($5 == "12bp" || $5 == "13bp" || $5 == "14bp" || $5 == "15bp" || $5 == "16bp") print $1, $2, $3}}' | intersectBed -a stdin -b {input[1]} -u | slopBed -b 50 -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin > {output[0]}
+    grep divergent {input[0]} | awk -F"\t|_" 'BEGIN{{OFS="\t";}}{{if ($5 == "12bp" || $5 == "13bp" || $5 == "14bp" || $5 == "15bp" || $5 == "16bp") print $1, $2, $3}}' | intersectBed -a stdin -b {input[1]} -v | slopBed -b 50 -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin > {output[1]}
+    hmmsearch --tblout {output[2]} {input[4]} {output[0]} > {output[3]}
+    hmmsearch --tblout {output[4]} {input[4]} {output[1]} > {output[5]}
+    grep -v "#" {output[2]} | awk '{{print $1 "\t" $6}}' > {output[6]}
+    grep -v "#"	{output[4]} | awk '{{print $1 "\t" $6}}' > {output[7]}
+    grep tandem_m2m1 {input[0]} | awk -F"\t|_" 'BEGIN{{OFS="\t";}}{{if ($5 == "23bp" || $5 == "24bp" || $5 == "25bp" || $5 == "26bp" || $5 == "27bp" || $5 == "28bp") print $1, $2, $3}}' | intersectBed -a stdin -b {input[1]} -u | slopBed -b 50 -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin > {output[8]}
+    grep tandem_m2m1 {input[0]} | awk -F"\t|_" 'BEGIN{{OFS="\t";}}{{if ($5 == "23bp" || $5 == "24bp" || $5 == "25bp" || $5 == "26bp" || $5 == "27bp" || $5 == "28bp") print $1, $2, $3}}' | intersectBed -a stdin -b {input[1]} -v | slopBed -b 50 -i stdin -g {input[2]} | fastaFromBed -fi {input[3]} -bed stdin > {output[9]}
+    hmmsearch --tblout {output[10]} {input[5]} {output[8]} > {output[11]}
+    hmmsearch --tblout {output[12]} {input[5]} {output[9]} > {output[13]}
+    grep -v "#"	{output[10]} | awk '{{print $1 "\t" $6}}' > {output[14]}
+    grep -v "#" {output[12]} | awk '{{print $1 "\t" $6}}' > {output[15]}
+    Rscript scripts/motif_HMM_alignment_scores.R
+    '''

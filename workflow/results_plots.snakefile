@@ -20,6 +20,7 @@ rule misc_R_plots:
     'species/elegans/repeats_dfam/elegans_dfam.repeats.id.bed',
     'DE_analysis/genes_downregulated_him17_vs_N2.direct.txt',
     expand('CELE2_CERP2_other_species/{sample}.summary', sample=REPEAT_SEARCH_SPECIES),
+    expand('motif_enrichment/{sample}/{sample}.m1m2_clusters.arrangements_by_distance.summary', sample=ALL_SPECIES)
   output:
     'plots/expression_unique_GL_promoter_genes.pdf',
     'plots/GC_content.pdf',
@@ -33,6 +34,8 @@ rule misc_R_plots:
     'plots/CERP2_CELE2_length.pdf',
     'plots/CERP2_CELE2_n_other_species.pdf',
     'plots/GO_enrichment_direct_targets.pdf',
+    'plots/m2m1_tandem_distance.pdf',
+    'plots/m1m2_divergent_distance.pdf',
   shell:
     '''
     Rscript scripts/exp_analysis_m1m2_genes.R
@@ -45,66 +48,49 @@ rule misc_R_plots:
     Rscript scripts/CERP2_CELE2_len.R
     Rscript scripts/CERP2_CELE2_other_species.R
     Rscript scripts/GO_cluster_profiler.R
+    Rscript scripts/m1m2_intermotif_distance.R
     '''
+
 
 rule him17_peaks_heatmap:
   input:
     "data/elegans/chipseq/yapc/elegans_HIM17.smooth_100_yapc_0.00001.bed",
     "species/elegans/repeats_dfam/elegans_dfam.repeats.id.bed",
     "motif_enrichment/elegans/elegans.m1m2_clusters.bed",
-    "RE_annotation/reg_elements_all.elegans.gl_specific.bed",
-    "RE_annotation/reg_elements_all.elegans.not_gl_specific.bed",
+    "relmapping/processed_tracks/elegans_atac_ya_wt.bw",
     "species/elegans/genome/elegans.chrom.sizes.txt",
     "data/elegans/chipseq/yapc/elegans_HIM17.smooth_100_yapc_coverage.bw",
   output:
     "heatmaps_int_files/HIM17_peaks.all.bed",
     temp("heatmaps_int_files/CELE2_CERP2.bg"),
-    temp("heatmaps_int_files/m1m2.bg"),
-    temp("heatmaps_int_files/RE_GL_specific.bg"),
-    temp("heatmaps_int_files/RE_nonGL_specific.bg"),
     "heatmaps_int_files/CELE2_CERP2.bw",
-    "heatmaps_int_files/m1m2.bw",
-    "heatmaps_int_files/RE_GL_specific.bw",
-    "heatmaps_int_files/RE_nonGL_specific.bw",
-    "heatmaps_int_files/HIM17_CELE2_CERP2_m1m2_RE.heatmap.bed",
-    "heatmaps_int_files/HIM17_CELE2_CERP2_m1m2_RE.sorted.mat.gz",
-    "plots/HIM17_CELE2_CERP2_m1m2_RE.heatmap.repeat_sorted.pdf",
-    "heatmaps_int_files/HIM17_CELE2_CERP2_m1m2_RE.sorted.clusters",
+    "heatmaps_int_files/HIM17_atac_CELE2_CERP2.sorted.mat.gz",
+    "plots/HIM17_atac_CELE2_CERP2.heatmap.repeat_sorted.pdf",
+    "heatmaps_int_files/elegans_atac_ya_wt.with_mtDNA.bw",
   resources:
     cpus=10
   shell:
     '''
     cut -f 1,2,3 {input[0]} | sort -k 1,1 -k2,2n > {output[0]}
-    grep 'CERP2\|CELE2' {input[1]} | genomeCoverageBed -i stdin -g {input[5]} -bga | LC_COLLATE=C sort -k 1,1 -k2,2n > {output[1]}
-    genomeCoverageBed -i {input[2]} -g {input[5]} -bga | LC_COLLATE=C sort -k 1,1 -k2,2n > {output[2]}
-    genomeCoverageBed -i {input[3]} -g {input[5]} -bga | LC_COLLATE=C sort -k 1,1 -k2,2n > {output[3]}
-    genomeCoverageBed -i {input[4]} -g {input[5]} -bga | LC_COLLATE=C sort -k 1,1 -k2,2n > {output[4]}
-    bedGraphToBigWig {output[1]} {input[5]} {output[5]}
-    bedGraphToBigWig {output[2]} {input[5]} {output[6]}
-    bedGraphToBigWig {output[3]} {input[5]} {output[7]}
-    bedGraphToBigWig {output[4]} {input[5]} {output[8]}
+    grep 'CERP2\|CELE2' {input[1]} | genomeCoverageBed -i stdin -g {input[4]} -bga | LC_COLLATE=C sort -k 1,1 -k2,2n > {output[1]}
+    bedGraphToBigWig {output[1]} {input[4]} {output[2]}
     intersectBed -a {output[0]} -b {input[2]} -u > {output[0]}.m1m2
     intersectBed -a {output[0]} -b {input[2]} -v > {output[0]}.no_m1m2
-    echo -e "#chrom\tstart\tend" > {output[9]}
-    for cluster in m1m2 no_m1m2
-    do
-    intersectBed -a {output[0]}.$cluster -b RE_annotation/reg_elements_all.elegans.gl_specific.bed -u | awk '{{print $0 "\t1" }}' > {output[0]}.$cluster.glre
-    intersectBed -a {output[0]}.$cluster -b RE_annotation/reg_elements_all.elegans.gl_specific.bed -v | awk '{{print $0 "\t0" }}' >> {output[0]}.$cluster.glre
-    intersectBed -a {output[0]}.$cluster.glre -b RE_annotation/reg_elements_all.elegans.not_gl_specific.bed -u | awk '{{print $0 "\t1" }}' > {output[0]}.$cluster.glre.re
-    intersectBed -a {output[0]}.$cluster.glre -b RE_annotation/reg_elements_all.elegans.not_gl_specific.bed -v | awk '{{print $0 "\t0" }}' >> {output[0]}.$cluster.glre.re
-    grep 'CERP2\|CELE2' {input[1]} | intersectBed -a {output[0]}.$cluster.glre.re -b stdin -u | awk '{{print $0 "\t1" }}' > {output[0]}.$cluster.bed.glre.re.TE
-    grep 'CERP2\|CELE2' {input[1]} | intersectBed -a {output[0]}.$cluster.glre.re -b stdin -v | awk '{{print $0 "\t0" }}' >> {output[0]}.$cluster.bed.glre.re.TE
-    sort -k4,4rn -k5,5rn -k6,6rn {output[0]}.$cluster.bed.glre.re.TE | cut -f 1,2,3 >> {output[9]}
-    echo -e "#chrom\tstart\tend" >> {output[9]}
-    done
-    computeMatrix scale-regions -R {output[9]} -S {input[6]} {output[5]} {output[6]} {output[7]} {output[8]} --beforeRegionStartLength 500 --afterRegionStartLength 500 --regionBodyLength 200 --startLabel peak_start --endLabel peak_end --binSize 10 --samplesLabel HIM17 CELE2_CERP2 m1m2 GLRE nonGLRE -p {resources.cpus} -o {output[10]} 
-    plotHeatmap -m {output[10]} -out {output[11]} --sortRegions keep --averageTypeSummaryPlot mean --missingDataColor 0.5 --colorList 'white,forestgreen' 'white,black' 'white,darkorange' 'white,purple' 'white,grey' --plotTitle "HIM-17 peaks" -min 0 -max 60 1 1 1 1 --whatToShow 'heatmap and colorbar' --interpolationMethod gaussian --outFileSortedRegions {output[12]}
+    bigWigToBedGraph {input[3]} {output[5]}.bg
+    grep MtDNA {input[4]} | awk '{{print $1 "\t" 1 "\t" $2 "\t0"}}' | cat {output[5]}.bg - | sort -k 1,1 -k2,2n > {output[5]}.with_mito.bg
+    bedGraphToBigWig {output[5]}.with_mito.bg {input[4]} {output[5]}
+    rm {output[5]}.bg
+    rm {output[5]}.with_mito.bg
+    computeMatrix scale-regions -R {output[0]}.m1m2 {output[0]}.no_m1m2 -S {input[5]} {output[5]} {output[2]} --beforeRegionStartLength 500 --afterRegionStartLength 500 --regionBodyLength 200 --startLabel peak_start --endLabel peak_end --binSize 10 --samplesLabel HIM17 CELE2_CERP2 ATAC -p {resources.cpus} -o {output[3]} --sortUsingSamples 1
+    plotHeatmap -m {output[3]} -out {output[4]} --sortRegions keep --averageTypeSummaryPlot mean --missingDataColor 0.5 --colorList 'white,forestgreen' 'white,grey' 'white,black' --plotTitle "HIM-17 peaks" --whatToShow 'heatmap and colorbar' --interpolationMethod gaussian 
     '''
 
 
 rule phyloP_download:
   output:
     'data/external_data/phyloP_26way.bw'
+  resources:
+    download_streams=1
   shell:
     '''
     wget ftp://hgdownload.soe.ucsc.edu/goldenPath/ce11/phyloP26way/ce11.phyloP26way.bw -O {output[0]}
@@ -121,13 +107,13 @@ rule m1m2_conservation_phylop:
     'motif_conservation/elegans.canonical_divergent_m1m2.bed',
     'motif_conservation/elegans.canonical_tandem_m2m1.bed',
     'motif_conservation/elegans.divergent.all_RE.bed',
-    'motif_conservation/elegans.divergent.GLRE.bed',
+    'motif_conservation/elegans.divergent.GLpromoter.bed',
     'motif_conservation/elegans.tandem_m2m1.all_RE.bed',
-    'motif_conservation/elegans.tandem_m2m1.GLRE.bed',
+    'motif_conservation/elegans.tandem_m2m1.GLpromoter.bed',
     'motif_conservation/elegans.divergent.all_RE.heat.pdf',
-    'motif_conservation/elegans.divergent.GLRE.heat.pdf',
+    'motif_conservation/elegans.divergent.GLpromoter.heat.pdf',
     'motif_conservation/elegans.tandem_m2m1.all_RE.heat.pdf',
-    'motif_conservation/elegans.tandem_m2m1.GLRE.heat.pdf',
+    'motif_conservation/elegans.tandem_m2m1.GLpromoter.heat.pdf',
   resources:
     cpus=6
   shell:
@@ -135,15 +121,15 @@ rule m1m2_conservation_phylop:
     grep divergent {input[0]} | awk 'BEGIN{{FS="_|bp";}}{{if ($2 > 10 && $2 < 20) print}}' > {output[0]}
     grep tandem_m2m1 {input[0]} | awk 'BEGIN{{FS="_|bp";}}{{if ($2 > 20) print}}' > {output[1]}
     intersectBed -a {input[1]} -b {output[1]} -v | intersectBed -a {output[0]} -b stdin -u > {output[2]}
-    intersectBed -a {input[2]} -b {output[1]} -v | intersectBed -a {output[0]} -b stdin -u > {output[3]}
+    grep coding_promoter {input[2]} | intersectBed -a stdin -b {output[1]} -v | intersectBed -a {output[0]} -b stdin -u > {output[3]}
     intersectBed -a {input[1]} -b {output[0]} -v | intersectBed -a {output[1]} -b stdin -u > {output[4]}
-    intersectBed -a {input[2]} -b {output[0]} -v | intersectBed -a {output[1]} -b stdin -u > {output[5]}
+    grep coding_promoter {input[2]} | intersectBed -a stdin -b {output[0]} -v | intersectBed -a {output[1]} -b stdin -u > {output[5]}
     computeMatrix scale-regions -R {output[2]} -S {input[3]} --beforeRegionStartLength 50 --afterRegionStartLength 50 --regionBodyLength 50 --startLabel motif_start --endLabel motif_end --binSize 1 --samplesLabel divergent.all_RE -o {output[6]}.mat.gz -p {resources.cpus}
     computeMatrixOperations filterStrand -m {output[6]}.mat.gz -o {output[6]}.for.mat.gz --strand +
     computeMatrixOperations filterStrand -m {output[6]}.mat.gz -o {output[6]}.rev.mat.gz --strand -
     computeMatrixOperations rbind -m {output[6]}.for.mat.gz {output[6]}.rev.mat.gz -o {output[6]}.stranded.mat.gz
     plotHeatmap -m {output[6]}.stranded.mat.gz -out {output[6]} --averageTypeSummaryPlot mean --missingDataColor 0.5 --plotTitle "phyloP divergent_m1m2 RE" --colorMap Blues --heatmapHeight 12 --heatmapWidth 6 --yAxisLabel "divergent_m2m1" --xAxisLabel "" --startLabel "m1" --endLabel "m2"
-    computeMatrix scale-regions -R {output[3]} -S {input[3]} --beforeRegionStartLength 50 --afterRegionStartLength 50 --regionBodyLength 50 --startLabel motif_start --endLabel motif_end --binSize 1 --samplesLabel divergent.GLRE -o {output[7]}.mat.gz -p {resources.cpus}
+    computeMatrix scale-regions -R {output[3]} -S {input[3]} --beforeRegionStartLength 50 --afterRegionStartLength 50 --regionBodyLength 50 --startLabel motif_start --endLabel motif_end --binSize 1 --samplesLabel divergent.GLpromoter -o {output[7]}.mat.gz -p {resources.cpus}
     computeMatrixOperations filterStrand -m {output[7]}.mat.gz -o {output[7]}.for.mat.gz --strand +
     computeMatrixOperations filterStrand -m {output[7]}.mat.gz -o {output[7]}.rev.mat.gz --strand -
     computeMatrixOperations rbind -m {output[7]}.for.mat.gz {output[7]}.rev.mat.gz -o {output[7]}.stranded.mat.gz
@@ -153,7 +139,7 @@ rule m1m2_conservation_phylop:
     computeMatrixOperations filterStrand -m {output[8]}.mat.gz -o {output[8]}.rev.mat.gz --strand -
     computeMatrixOperations rbind -m {output[8]}.for.mat.gz {output[8]}.rev.mat.gz -o {output[8]}.stranded.mat.gz
     plotHeatmap -m {output[8]}.stranded.mat.gz -out {output[8]} --averageTypeSummaryPlot mean --missingDataColor 0.5 --plotTitle "phyloP tandem_m1m2 all RE" --colorMap Blues --heatmapHeight 12 --heatmapWidth 6 --yAxisLabel "tandem_m2m1" --xAxisLabel "" --startLabel "m1" --endLabel "m2"
-    computeMatrix scale-regions -R {output[5]} -S {input[3]} --beforeRegionStartLength 50 --afterRegionStartLength 50 --regionBodyLength 50 --startLabel motif_start --endLabel motif_end --binSize 1 --samplesLabel tandem_m1m2.GLRE -o {output[9]}.mat.gz -p {resources.cpus}
+    computeMatrix scale-regions -R {output[5]} -S {input[3]} --beforeRegionStartLength 50 --afterRegionStartLength 50 --regionBodyLength 50 --startLabel motif_start --endLabel motif_end --binSize 1 --samplesLabel tandem_m1m2.GLpromoter -o {output[9]}.mat.gz -p {resources.cpus}
     computeMatrixOperations filterStrand -m {output[9]}.mat.gz -o {output[9]}.for.mat.gz --strand +
     computeMatrixOperations filterStrand -m {output[9]}.mat.gz -o {output[9]}.rev.mat.gz --strand -
     computeMatrixOperations rbind -m {output[9]}.for.mat.gz {output[9]}.rev.mat.gz -o {output[9]}.stranded.mat.gz

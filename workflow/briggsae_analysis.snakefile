@@ -42,7 +42,7 @@ rule cb_gl_elements_annotation:
     GL_RE = "RE_annotation/reg_elements_all.briggsae.gl_specific.bed",
     nonGL_RE = "RE_annotation/reg_elements_all.briggsae.not_gl_specific.bed"
   conda:
-    "env/diffbind.yaml"
+    "env/diffbind.yml"
   shell:
     '''
     sed '1d' {input} | awk -F'[\t=;]' 'BEGIN{{OFS="\t";}}{{print $1, $2, $3, "ce.re" NR "." $7, $(NF-4), $(NF-3)}}' > {output.parsed_RE}
@@ -58,16 +58,19 @@ rule cb_gl_motif_enrichment:
     GL_RE = "RE_annotation/reg_elements_all.briggsae.gl_specific.bed",
     nonGL_RE = "RE_annotation/reg_elements_all.briggsae.not_gl_specific.bed"
   output:
-    GL_RE_fasta = temp("RE_annotation/reg_elements_all.briggsae.gl_specific.fasta"),
-    nonGL_RE_fasta = temp("RE_annotation/reg_elements_all.briggsae.not_gl_specific.fasta"),
-    meme_results = directory("meme/briggsae.GL_specific_vs_nonGL_specific")
+    GL_RE_fasta = temp("RE_annotation/promoters.briggsae.gl_specific.fasta"),
+    nonGL_RE_fasta = temp("RE_annotation/promoters.briggsae.not_gl_specific.fasta"),
+    meme_results_out = "meme/briggsae.GL_specific_vs_nonGL_specific_promoters/meme_out/meme.txt",
+    meme_results_tsv = "meme/briggsae.GL_specific_vs_nonGL_specific_promoters/summary.tsv",
+  params:
+    directory("meme/briggsae.GL_specific_vs_nonGL_specific_promoters")
   resources:
     ntasks=6
   shell:
     '''
-    fastaFromBed -fi {input.genome} -bed {input.GL_RE} -fo {output.GL_RE_fasta} -s
-    fastaFromBed -fi {input.genome} -bed {input.nonGL_RE} -fo {output.nonGL_RE_fasta} -s
-    meme-chip -oc {output.meme_results} -neg {output.nonGL_RE_fasta} -spamo-skip -fimo-skip -meme-p 6 -meme-nmotifs 6 -meme-minw 5 -meme-maxw 20 -dreme-m 0 {output.GL_RE_fasta}
+    grep coding_promoter {input.GL_RE} | fastaFromBed -fi {input.genome} -bed stdin -fo {output.GL_RE_fasta} -s
+    grep coding_promoter {input.nonGL_RE} | fastaFromBed -fi {input.genome} -bed stdin -fo {output.nonGL_RE_fasta} -s
+    meme-chip -oc {params} -neg {output.nonGL_RE_fasta} -spamo-skip -fimo-skip -meme-p 6 -meme-nmotifs 6 -meme-minw 5 -meme-maxw 20 -dreme-m 0 {output.GL_RE_fasta}
     '''
 
 
@@ -197,213 +200,347 @@ rule cb_motif_associated_genes:
     '''
 
 
-rule GLRE_conservation:
+#rule GLRE_conservation:
+#  input:
+#    "promoter_annotation/promoters_all.elegans.bed",
+#    "promoter_annotation/promoters_all.briggsae.bed",
+#    "RE_annotation/reg_elements_all.elegans.gl_specific.m1m2.bed",
+#    "RE_annotation/reg_elements_all.briggsae.gl_specific.m1m2.bed",
+#    "data/external_data/elegans.briggsae.1to1.txt",
+#    "motif_enrichment/briggsae/briggsae.m1m2_clusters.bed",
+#    "motif_enrichment/briggsae/briggsae.m1.bed",
+#    "motif_enrichment/briggsae/briggsae.m2.bed",
+#    "motif_enrichment/elegans/elegans.m1m2_clusters.bed",
+#    "motif_enrichment/elegans/elegans.m1.bed",
+#    "motif_enrichment/elegans/elegans.m2.bed",
+#    "species/briggsae/gene_annotation/briggsae.gene_annotation.coding_gene_longest_isoform.bed",
+#    "species/briggsae/genome/briggsae.chrom.sizes.txt",
+#    "species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.bed",
+#    "species/elegans/genome/elegans.chrom.sizes.txt",
+#    "motif_enrichment/briggsae/briggsae.m1.permissive.bed",
+#    "motif_enrichment/briggsae/briggsae.m2.permissive.bed",
+#    "motif_enrichment/elegans/elegans.m1.permissive.bed",
+#    "motif_enrichment/elegans/elegans.m2.permissive.bed",
+#  output:
+#    "RE_conservation/promoters_all.elegans.associated_genes.bed",
+#    "RE_conservation/promoters_all.briggsae.associated_genes.bed",
+#    "RE_conservation/promoters_GL_m1m2.elegans.associated_genes.bed",
+#    "RE_conservation/promoters_GL_m1m2.briggsae.associated_genes.bed",
+#    "RE_conservation/elegans_to_briggsae/promoters_GL_m1m2.elegans.associated_genes.elegans_briggsae_orthologs",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_all.bed",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1m2.genes",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_dm2.genes",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_only.genes",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_dm1.genes",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_only.genes",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_m2_no_pair.genes",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.genes",
+#    "RE_conservation/conservation_statistics.txt",
+#    "RE_conservation/briggsae_to_elegans/promoters_GL_m1m2.briggsae.associated_genes.briggsae_elegans_orthologs",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_all.bed",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1m2.genes",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_dm2.genes",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_only.genes",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_dm1.genes",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_only.genes",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_m2_no_pair.genes",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.genes",
+#    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.flanking_m1m2.genes",
+#    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.flanking_m1m2.genes",
+#  shell:
+#    '''
+#    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[0]} | sort -k 4,4 > {output[0]}
+#    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[1]} | sort -k 4,4 > {output[1]}
+#    intersectBed -a {output[0]} -b {input[2]} -u > {output[2]}
+#    intersectBed -a {output[1]} -b {input[3]} -u > {output[3]}
+#    sort -k 1,1 {input[4]} | join -1 1 -2 4 - {output[2]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[4]}
+#    join -1 4 -2 2 {output[1]} {output[4]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[5]}
+#    intersectBed -a {output[5]} -b {input[5]} -u | cut -f 4 | sort | uniq > {output[6]}
+#    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -u | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[7]}
+#    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[8]}
+#    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -u | intersectBed -a stdin -b {input[6]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[9]}
+#    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[10]}
+#    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[7]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[11]}
+#    intersectBed -a {output[5]} -b {input[6]} -v | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} | join -v 1 - {output[7]} | join -v 1 - {output[8]} | join -v 1 - {output[9]} | join -v 1 - {output[10]} | join -v 1 - {output[11]} > {output[12]}
+#    sort -k 4,4 {input[11]} | join -1 1 -2 4 {output[12]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[12]} | slopBed -r 200 -l 0 -s -i stdin -g {input[12]} | intersectBed -a stdin -b {input[5]} -u | cut -f 4 | sort > {output[23]}
+#    echo -e "species1_GL_m1m2_genes\twith_orthologs\tspecies2_orthologs_with_promoters\tm1m2_orthologs\tm1_dm2_orthologs\tm1_only_orthologs\tm2_dm1_orthologs\tm2_only_orthologs\tm1m2_nopair_orthologs\tno_motif_orthologs_permissive\tno_motif_orthologs_flanking_m1m2" > {output[13]}
+#    species1_GL_m1m2_genes=$(cut -f 4 {output[2]} | sort | uniq | wc -l)
+#    with_orthologs=$(wc -l < {output[4]})
+#    species2_orthologs_with_promoters=$(cut -f 4 {output[5]} | sort | uniq | wc -l)
+#    m1m2_orthologs=$(wc -l < {output[6]})
+#    m1_dm2_orthologs=$(wc -l < {output[7]})
+#    m1_only_orthologs=$(wc -l < {output[8]})
+#    m2_dm1_orthologs=$(wc -l < {output[9]})
+#    m2_only_orthologs=$(wc -l < {output[10]})
+#    m1m2_nopair_orthologs=$(wc -l < {output[11]})
+#    no_motif_orthologs=$(wc -l < {output[12]})
+#    no_motif_orthologs_stringent=$(wc -l < {output[23]})
+#    echo -e "elegans.briggsae\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
+#    sort -k 2,2 {input[4]} | join -1 2 -2 4 - {output[3]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[14]}
+#    join -1 4 -2 2 {output[0]} {output[14]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[15]}
+#    intersectBed -a {output[15]} -b {input[8]} -u | cut -f 4 | sort | uniq > {output[16]}
+#    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -u | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[17]}
+#    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[18]}
+#    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -u | intersectBed -a stdin -b {input[9]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[19]}
+#    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[20]}
+#    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[10]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[21]}    
+#    intersectBed -a {output[15]} -b {input[9]} -v | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} | join -v 1 - {output[17]} | join -v 1 - {output[18]} | join -v 1 - {output[19]} | join -v 1 - {output[20]} | join -v 1 - {output[21]} > {output[22]}
+#    sort -k 4,4 {input[13]} | join -1 1 -2 4 {output[22]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[14]} | slopBed -r 200 -l 0 -s -i stdin -g {input[14]} | intersectBed -a stdin -b {input[8]} -u | cut -f 4 | sort > {output[24]}
+#    species1_GL_m1m2_genes=$(cut -f 4 {output[3]} | sort | uniq | wc -l)
+#    with_orthologs=$(wc -l < {output[14]})
+#    species2_orthologs_with_promoters=$(cut -f 4 {output[15]} | sort | uniq | wc -l)
+#    m1m2_orthologs=$(wc -l < {output[16]})
+#    m1_dm2_orthologs=$(wc -l < {output[17]})
+#    m1_only_orthologs=$(wc -l < {output[18]})
+#    m2_dm1_orthologs=$(wc -l < {output[19]})
+#    m2_only_orthologs=$(wc -l < {output[20]})
+#    m1m2_nopair_orthologs=$(wc -l < {output[21]})
+#    no_motif_orthologs=$(wc -l < {output[22]})
+#    no_motif_orthologs_stringent=$(wc -l < {output[24]})
+#    echo -e "briggsae.elegans\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
+#    '''
+
+#rule RE_conservation:
+#  input:
+#    "promoter_annotation/promoters_all.elegans.bed",
+#    "promoter_annotation/promoters_all.briggsae.bed",
+#    "RE_annotation/reg_elements_all.elegans.bed",
+#    "RE_annotation/reg_elements_all.briggsae.bed",
+#    "data/external_data/elegans.briggsae.1to1.txt",
+#    "motif_enrichment/briggsae/briggsae.m1m2_clusters.bed",
+#    "motif_enrichment/briggsae/briggsae.m1.bed",
+#    "motif_enrichment/briggsae/briggsae.m2.bed",
+#    "motif_enrichment/elegans/elegans.m1m2_clusters.bed",
+#    "motif_enrichment/elegans/elegans.m1.bed",
+#    "motif_enrichment/elegans/elegans.m2.bed",
+#    "species/briggsae/gene_annotation/briggsae.gene_annotation.coding_gene_longest_isoform.bed",
+#    "species/briggsae/genome/briggsae.chrom.sizes.txt",
+#    "species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.bed",
+#    "species/elegans/genome/elegans.chrom.sizes.txt",
+#    "motif_enrichment/briggsae/briggsae.m1.permissive.bed",
+#    "motif_enrichment/briggsae/briggsae.m2.permissive.bed",
+#    "motif_enrichment/elegans/elegans.m1.permissive.bed",
+#    "motif_enrichment/elegans/elegans.m2.permissive.bed",
+#  output:
+#    "RE_conservation_all/promoters_all.elegans.associated_genes.bed",
+#    "RE_conservation_all/promoters_all.briggsae.associated_genes.bed",
+#    "RE_conservation_all/promoters_m1m2.elegans.associated_genes.bed",
+#    "RE_conservation_all/promoters_m1m2.briggsae.associated_genes.bed",
+#    "RE_conservation_all/elegans_to_briggsae/promoters_m1m2.elegans.associated_genes.elegans_briggsae_orthologs",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_all.bed",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1m2.genes",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_dm2.genes",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_only.genes",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_dm1.genes",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_only.genes",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_m2_no_pair.genes",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.genes",
+#    "RE_conservation_all/conservation_statistics.txt",
+#    "RE_conservation_all/briggsae_to_elegans/promoters_m1m2.briggsae.associated_genes.briggsae_elegans_orthologs",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_all.bed",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1m2.genes",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_dm2.genes",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_only.genes",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_dm1.genes",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_only.genes",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_m2_no_pair.genes",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.genes",
+#    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.flanking_m1m2.genes",
+#    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.flanking_m1m2.genes",
+#    "RE_conservation_all/conserved_vs_species_specific_promoters.m1m2_statistics.txt",
+#    "plots/conserved_sp_specific_promoters.m1m2_overlap.pdf",
+#  shell:
+#    '''
+#    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[0]} | sort -k 4,4 > {output[0]}
+#    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[1]} | sort -k 4,4 > {output[1]}
+#    intersectBed -a {output[0]} -b {input[2]} -u | intersectBed -a stdin -b {input[8]} -u > {output[2]}
+#    intersectBed -a {output[1]} -b {input[3]} -u | intersectBed -a stdin -b {input[5]} -u > {output[3]}
+#    sort -k 1,1 {input[4]} | join -1 1 -2 4 - {output[2]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[4]}
+#    join -1 4 -2 2 {output[1]} {output[4]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[5]}
+#    intersectBed -a {output[5]} -b {input[5]} -u | cut -f 4 | sort | uniq > {output[6]}
+#    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -u | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[7]}
+#    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[8]}
+#    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -u | intersectBed -a stdin -b {input[6]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[9]}
+#    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[10]}
+#    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[7]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[11]}
+#    intersectBed -a {output[5]} -b {input[6]} -v | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} | join -v 1 - {output[7]} | join -v 1 - {output[8]} | join -v 1 - {output[9]} | join -v 1 - {output[10]} | join -v 1 - {output[11]} > {output[12]}
+#    sort -k 4,4 {input[11]} | join -1 1 -2 4 {output[12]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[12]} | slopBed -r 200 -l 0 -s -i stdin -g {input[12]} | intersectBed -a stdin -b {input[5]} -u | cut -f 4 | sort > {output[23]}
+#    echo -e "species1_GL_m1m2_genes\twith_orthologs\tspecies2_orthologs_with_promoters\tm1m2_orthologs\tm1_dm2_orthologs\tm1_only_orthologs\tm2_dm1_orthologs\tm2_only_orthologs\tm1m2_nopair_orthologs\tno_motif_orthologs_permissive\tno_motif_orthologs_flanking_m1m2" > {output[13]}
+#    species1_GL_m1m2_genes=$(cut -f 4 {output[2]} | sort | uniq | wc -l)
+#    with_orthologs=$(wc -l < {output[4]})
+#    species2_orthologs_with_promoters=$(cut -f 4 {output[5]} | sort | uniq | wc -l)
+#    m1m2_orthologs=$(wc -l < {output[6]})
+#    m1_dm2_orthologs=$(wc -l < {output[7]})
+#    m1_only_orthologs=$(wc -l < {output[8]})
+#    m2_dm1_orthologs=$(wc -l < {output[9]})
+#    m2_only_orthologs=$(wc -l < {output[10]})
+#    m1m2_nopair_orthologs=$(wc -l < {output[11]})
+#    no_motif_orthologs=$(wc -l < {output[12]})
+#    no_motif_orthologs_stringent=$(wc -l < {output[23]})
+#    echo -e "elegans.briggsae\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
+#    sort -k 2,2 {input[4]} | join -1 2 -2 4 - {output[3]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[14]}
+#    join -1 4 -2 2 {output[0]} {output[14]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[15]}
+#    intersectBed -a {output[15]} -b {input[8]} -u | cut -f 4 | sort | uniq > {output[16]}
+#    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -u | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[17]}
+#    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[18]}
+#    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -u | intersectBed -a stdin -b {input[9]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[19]}
+#    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[20]}
+#    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[10]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[21]}
+#    intersectBed -a {output[15]} -b {input[9]} -v | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} | join -v 1 - {output[17]} | join -v 1 - {output[18]} | join -v 1 - {output[19]} | join -v 1 - {output[20]} | join -v 1 - {output[21]} > {output[22]}
+#    sort -k 4,4 {input[13]} | join -1 1 -2 4 {output[22]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[14]} | slopBed -r 200 -l 0 -s -i stdin -g {input[14]} | intersectBed -a stdin -b {input[8]} -u | cut -f 4 | sort > {output[24]}
+#    species1_GL_m1m2_genes=$(cut -f 4 {output[3]} | sort | uniq | wc -l)
+#    with_orthologs=$(wc -l < {output[14]})
+#    species2_orthologs_with_promoters=$(cut -f 4 {output[15]} | sort | uniq | wc -l)
+#    m1m2_orthologs=$(wc -l < {output[16]})
+#    m1_dm2_orthologs=$(wc -l < {output[17]})
+#    m1_only_orthologs=$(wc -l < {output[18]})
+#    m2_dm1_orthologs=$(wc -l < {output[19]})
+#    m2_only_orthologs=$(wc -l < {output[20]})
+#    m1m2_nopair_orthologs=$(wc -l < {output[21]})
+#    no_motif_orthologs=$(wc -l < {output[22]})
+#    no_motif_orthologs_stringent=$(wc -l < {output[24]})
+#    echo -e "briggsae.elegans\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
+#    echo -e "convergent\tdivergent\ttandem_m1m2\ttandem_m2m1" > {output[25]}
+#    elegans_conserved=$(cat {output[6]} {output[7]} {output[8]} {output[9]} {output[10]} {output[11]} {output[23]} | sort | uniq | join -1 1 -2 2 - {output[4]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[2]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[8]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
+#    elegans_specific=$(join -v 1 {output[12]} {output[23]} | join -1 1 -2 2  - {output[4]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[2]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[8]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
+#    briggsae_conserved=$(cat {output[16]} {output[17]} {output[18]} {output[19]} {output[20]} {output[21]} {output[24]} | sort | uniq | join -1 1 -2 2 - {output[14]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[3]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[5]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
+#    briggsae_specific=$(join -v 1 {output[22]} {output[24]} | join -1 1 -2 2 - {output[14]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[3]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[5]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
+#    echo -e "elegans_conserved"$elegans_conserved"\nelegans_specific"$elegans_specific"\nbriggsae_conserved"$briggsae_conserved"\nbriggsae_specific"$briggsae_specific"\n" >> {output[25]}
+#    Rscript scripts/RE_conservation_m1m2_fraction.R
+#    '''
+
+
+rule CERP2_conservation:
   input:
-    "promoter_annotation/promoters_all.elegans.bed",
-    "promoter_annotation/promoters_all.briggsae.bed",
-    "RE_annotation/reg_elements_all.elegans.gl_specific.m1m2.bed",
-    "RE_annotation/reg_elements_all.briggsae.gl_specific.m1m2.bed",
-    "data/external_data/elegans.briggsae.1to1.txt",
-    "motif_enrichment/briggsae/briggsae.m1m2_clusters.bed",
-    "motif_enrichment/briggsae/briggsae.m1.bed",
-    "motif_enrichment/briggsae/briggsae.m2.bed",
-    "motif_enrichment/elegans/elegans.m1m2_clusters.bed",
-    "motif_enrichment/elegans/elegans.m1.bed",
-    "motif_enrichment/elegans/elegans.m2.bed",
-    "species/briggsae/gene_annotation/briggsae.gene_annotation.coding_gene_longest_isoform.bed",
-    "species/briggsae/genome/briggsae.chrom.sizes.txt",
-    "species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.bed",
-    "species/elegans/genome/elegans.chrom.sizes.txt",
-    "motif_enrichment/briggsae/briggsae.m1.permissive.bed",
-    "motif_enrichment/briggsae/briggsae.m2.permissive.bed",
-    "motif_enrichment/elegans/elegans.m1.permissive.bed",
-    "motif_enrichment/elegans/elegans.m2.permissive.bed",
+    'promoter_annotation/promoters_all.elegans.bed',
+    'motif_enrichment/elegans/elegans.m1m2_clusters.bed',
+    'promoter_annotation/promoters_all.briggsae.bed',
+    'motif_enrichment/briggsae/briggsae.m1m2_clusters.bed',
+    'data/external_data/elegans.briggsae.1to1.txt',
+    'species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.bed',
+    'species/briggsae/gene_annotation/briggsae.gene_annotation.coding_gene_longest_isoform.bed',
+    'motif_enrichment/briggsae/briggsae.m1.bed',
+    'motif_enrichment/briggsae/briggsae.m2.bed',
+    'species/briggsae/genome/briggsae.chrom.sizes.txt',
+    'motif_enrichment/elegans/elegans.m1.bed',
+    'motif_enrichment/elegans/elegans.m2.bed',
+    'species/elegans/genome/elegans.chrom.sizes.txt',
   output:
-    "RE_conservation/promoters_all.elegans.associated_genes.bed",
-    "RE_conservation/promoters_all.briggsae.associated_genes.bed",
-    "RE_conservation/promoters_GL_m1m2.elegans.associated_genes.bed",
-    "RE_conservation/promoters_GL_m1m2.briggsae.associated_genes.bed",
-    "RE_conservation/elegans_to_briggsae/promoters_GL_m1m2.elegans.associated_genes.elegans_briggsae_orthologs",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_all.bed",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1m2.genes",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_dm2.genes",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_only.genes",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_dm1.genes",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_only.genes",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_m2_no_pair.genes",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.genes",
-    "RE_conservation/conservation_statistics.txt",
-    "RE_conservation/briggsae_to_elegans/promoters_GL_m1m2.briggsae.associated_genes.briggsae_elegans_orthologs",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_all.bed",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1m2.genes",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_dm2.genes",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_only.genes",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_dm1.genes",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_only.genes",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_m2_no_pair.genes",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.genes",
-    "RE_conservation/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.flanking_m1m2.genes",
-    "RE_conservation/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.flanking_m1m2.genes",
+    'coopted_CERP2_conservation/elegans_all_genes_CERP2.txt',
+    'coopted_CERP2_conservation/briggsae_all_genes_CERP2.txt',
+    'coopted_CERP2_conservation/all_coopted_orthologs.txt',
+    'promoter_annotation/promoters_all.elegans.associated_genes.bed',
+    'promoter_annotation/promoters_all.briggsae.associated_genes.bed',
+    'species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.name_sorted.bed',
+    'species/briggsae/gene_annotation/briggsae.gene_annotation.coding_gene_longest_isoform.name_sorted.bed',
+    'coopted_CERP2_conservation/conserved_CERP2.briggsae.genes',
+    'coopted_CERP2_conservation/conserved_motif_in_promoter.briggsae.genes',
+    'coopted_CERP2_conservation/conserved_m1m2_1000bp_upstream.briggsae.genes',
+    'coopted_CERP2_conservation/elegans_specific.briggsae_orthologs.genes',
+    'coopted_CERP2_conservation/conserved_CERP2.elegans.genes',
+    'coopted_CERP2_conservation/conserved_motif_in_promoter.elegans.genes',
+    'coopted_CERP2_conservation/conserved_m1m2_1000bp_upstream.elegans.genes',
+    'coopted_CERP2_conservation/briggsae_specific.elegans_orthologs.genes',
+    'coopted_CERP2_conservation/conservation.summary'
   shell:
     '''
-    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[0]} | sort -k 4,4 > {output[0]}
-    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[1]} | sort -k 4,4 > {output[1]}
-    intersectBed -a {output[0]} -b {input[2]} -u > {output[2]}
-    intersectBed -a {output[1]} -b {input[3]} -u > {output[3]}
-    sort -k 1,1 {input[4]} | join -1 1 -2 4 - {output[2]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[4]}
-    join -1 4 -2 2 {output[1]} {output[4]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[5]}
-    intersectBed -a {output[5]} -b {input[5]} -u | cut -f 4 | sort | uniq > {output[6]}
-    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -u | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[7]}
-    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[8]}
-    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -u | intersectBed -a stdin -b {input[6]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[9]}
-    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[10]}
-    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[7]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[11]}
-    intersectBed -a {output[5]} -b {input[6]} -v | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} | join -v 1 - {output[7]} | join -v 1 - {output[8]} | join -v 1 - {output[9]} | join -v 1 - {output[10]} | join -v 1 - {output[11]} > {output[12]}
-    sort -k 4,4 {input[11]} | join -1 1 -2 4 {output[12]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[12]} | slopBed -r 200 -l 0 -s -i stdin -g {input[12]} | intersectBed -a stdin -b {input[5]} -u | cut -f 4 | sort > {output[23]}
-    echo -e "species1_GL_m1m2_genes\twith_orthologs\tspecies2_orthologs_with_promoters\tm1m2_orthologs\tm1_dm2_orthologs\tm1_only_orthologs\tm2_dm1_orthologs\tm2_only_orthologs\tm1m2_nopair_orthologs\tno_motif_orthologs_permissive\tno_motif_orthologs_flanking_m1m2" > {output[13]}
-    species1_GL_m1m2_genes=$(cut -f 4 {output[2]} | sort | uniq | wc -l)
-    with_orthologs=$(wc -l < {output[4]})
-    species2_orthologs_with_promoters=$(cut -f 4 {output[5]} | sort | uniq | wc -l)
-    m1m2_orthologs=$(wc -l < {output[6]})
-    m1_dm2_orthologs=$(wc -l < {output[7]})
-    m1_only_orthologs=$(wc -l < {output[8]})
-    m2_dm1_orthologs=$(wc -l < {output[9]})
-    m2_only_orthologs=$(wc -l < {output[10]})
-    m1m2_nopair_orthologs=$(wc -l < {output[11]})
-    no_motif_orthologs=$(wc -l < {output[12]})
-    no_motif_orthologs_stringent=$(wc -l < {output[23]})
-    echo -e "elegans.briggsae\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
-    sort -k 2,2 {input[4]} | join -1 2 -2 4 - {output[3]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[14]}
-    join -1 4 -2 2 {output[0]} {output[14]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[15]}
-    intersectBed -a {output[15]} -b {input[8]} -u | cut -f 4 | sort | uniq > {output[16]}
-    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -u | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[17]}
-    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[18]}
-    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -u | intersectBed -a stdin -b {input[9]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[19]}
-    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[20]}
-    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[10]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[21]}    
-    intersectBed -a {output[15]} -b {input[9]} -v | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} | join -v 1 - {output[17]} | join -v 1 - {output[18]} | join -v 1 - {output[19]} | join -v 1 - {output[20]} | join -v 1 - {output[21]} > {output[22]}
-    sort -k 4,4 {input[13]} | join -1 1 -2 4 {output[22]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[14]} | slopBed -r 200 -l 0 -s -i stdin -g {input[14]} | intersectBed -a stdin -b {input[8]} -u | cut -f 4 | sort > {output[24]}
-    species1_GL_m1m2_genes=$(cut -f 4 {output[3]} | sort | uniq | wc -l)
-    with_orthologs=$(wc -l < {output[14]})
-    species2_orthologs_with_promoters=$(cut -f 4 {output[15]} | sort | uniq | wc -l)
-    m1m2_orthologs=$(wc -l < {output[16]})
-    m1_dm2_orthologs=$(wc -l < {output[17]})
-    m1_only_orthologs=$(wc -l < {output[18]})
-    m2_dm1_orthologs=$(wc -l < {output[19]})
-    m2_only_orthologs=$(wc -l < {output[20]})
-    m1m2_nopair_orthologs=$(wc -l < {output[21]})
-    no_motif_orthologs=$(wc -l < {output[22]})
-    no_motif_orthologs_stringent=$(wc -l < {output[24]})
-    echo -e "briggsae.elegans\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
+    intersectBed -a {input[0]} -b {input[1]} -wa -wb | grep divergent | cut -f 1,2,3,4,5,6,10 | awk -F"\t|_" 'BEGIN{{OFS="\t";}}{{if ($8 == "12bp" || $8 == "13bp" || $8 == "14bp" || $8 == "15bp" || $8 == "16bp") print $4}}' | tr "," "\n" | sort | uniq > {output[0]}
+    intersectBed -a {input[2]} -b {input[3]} -wa -wb | grep divergent | cut -f 1,2,3,4,5,6,10 | awk -F"\t|_" 'BEGIN{{OFS="\t";}}{{if ($8 == "12bp" || $8 == "13bp" || $8 == "14bp" || $8 == "15bp" || $8 == "16bp") print $4}}' | tr "," "\n" | sort | uniq > {output[1]}
+    join {output[0]} {input[4]} | awk '{{print $1 "\t" $2}}' > {output[2]}.tmp
+    sort -k 2,2 {input[4]} | join -1 1 -2 2 {output[1]} - | awk '{{print $2 "\t" $1}}' >> {output[2]}.tmp
+    sort -k 1,1 {output[2]}.tmp | uniq > {output[2]}
+    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[0]} | sort -k 4,4 > {output[3]}
+    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[2]} | sort -k 4,4 > {output[4]}
+    sort -k 4,4 {input[5]} > {output[5]}
+    sort -k 4,4 {input[6]} > {output[6]}
+    join {output[0]} {output[2]} | awk '{{print $2}}' | sort | join - {output[1]} > {output[7]}
+    join {output[0]} {output[2]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[4]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a stdin -b {input[7]} {input[8]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[7]} > {output[8]}
+    join {output[0]} {output[2]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[6]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -g {input[9]} -i stdin | intersectBed -a stdin -b {input[3]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[7]} | join -v 1 - {output[8]} > {output[9]}
+    join {output[0]} {output[2]} | awk '{{print $2}}' | sort | join -v 1 - {output[7]} | join -v 1 - {output[8]} | join -v 1 - {output[9]} > {output[10]}
+    sort -k 2,2 {output[2]} | join -1 1 -2 2 {output[1]} - | awk '{{print $2}}' | sort | join - {output[0]} > {output[11]}
+    sort -k 2,2 {output[2]} | join -1 1 -2 2 {output[1]} - | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[3]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a stdin -b {input[10]} {input[11]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[11]} > {output[12]}
+    sort -k 2,2 {output[2]} | join -1 1 -2 2 {output[1]} - | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[5]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -g {input[12]} -i stdin | intersectBed -a stdin -b {input[1]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[11]} | join -v 1 - {output[12]} > {output[13]}
+    sort -k 2,2 {output[2]} | join -1 1 -2 2 {output[1]} - | awk '{{print $2}}' | sort | join -v 1 - {output[11]} | join -v 1 - {output[12]} | join -v 1 - {output[13]} > {output[14]}
+    echo -e "CERP2_regulated_genes\tCERP2_regulated_orthologs\tCERP2_conserved\tmotif_conserved\tm1m2_upstream\tspecies_specific" > {output[15]}
+    ele_cerp2=$(wc -l < {output[0]})
+    ele_cerp2_ortho=$(join {output[0]} {output[2]} | wc -l)
+    ele_cerp2_conserved=$(wc -l < {output[7]})
+    ele_motif_conserved=$(wc -l < {output[8]})
+    ele_m1m2_upstream_conserved=$(wc -l < {output[9]})
+    ele_cerp2_specific=$(wc -l < {output[10]})
+    bri_cerp2=$(wc -l < {output[1]})
+    bri_cerp2_ortho=$(sort -k 2,2 {output[2]} | join -1 1 -2 2 {output[1]} - | wc -l)
+    bri_cerp2_conserved=$(wc -l < {output[11]})
+    bri_motif_conserved=$(wc -l < {output[12]})
+    bri_m1m2_upstream_conserved=$(wc -l < {output[13]})
+    bri_cerp2_specific=$(wc -l < {output[14]})
+    echo -e "elegans\t"$ele_cerp2"\t"$ele_cerp2_ortho"\t"$ele_cerp2_conserved"\t"$ele_motif_conserved"\t"$ele_m1m2_upstream_conserved"\t"$ele_cerp2_specific >> {output[15]}
+    echo -e "briggsae\t"$bri_cerp2"\t"$bri_cerp2_ortho"\t"$bri_cerp2_conserved"\t"$bri_motif_conserved"\t"$bri_m1m2_upstream_conserved"\t"$bri_cerp2_specific >> {output[15]}
     '''
 
-rule RE_conservation:
+
+rule blast_all_prot:
   input:
-    "promoter_annotation/promoters_all.elegans.bed",
-    "promoter_annotation/promoters_all.briggsae.bed",
-    "RE_annotation/reg_elements_all.elegans.bed",
-    "RE_annotation/reg_elements_all.briggsae.bed",
-    "data/external_data/elegans.briggsae.1to1.txt",
-    "motif_enrichment/briggsae/briggsae.m1m2_clusters.bed",
-    "motif_enrichment/briggsae/briggsae.m1.bed",
-    "motif_enrichment/briggsae/briggsae.m2.bed",
-    "motif_enrichment/elegans/elegans.m1m2_clusters.bed",
-    "motif_enrichment/elegans/elegans.m1.bed",
-    "motif_enrichment/elegans/elegans.m2.bed",
-    "species/briggsae/gene_annotation/briggsae.gene_annotation.coding_gene_longest_isoform.bed",
-    "species/briggsae/genome/briggsae.chrom.sizes.txt",
-    "species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.bed",
-    "species/elegans/genome/elegans.chrom.sizes.txt",
-    "motif_enrichment/briggsae/briggsae.m1.permissive.bed",
-    "motif_enrichment/briggsae/briggsae.m2.permissive.bed",
-    "motif_enrichment/elegans/elegans.m1.permissive.bed",
-    "motif_enrichment/elegans/elegans.m2.permissive.bed",
+    'species/elegans/protein_sequences/elegans.protein.longest_isoform.fa',
+    'species/briggsae/protein_sequences/blastdb/briggsae.protein.longest_isoform.fa.phr',
+    'species/briggsae/protein_sequences/blastdb/briggsae.protein.longest_isoform.fa.pin',
+    'species/briggsae/protein_sequences/blastdb/briggsae.protein.longest_isoform.fa.psq',
   output:
-    "RE_conservation_all/promoters_all.elegans.associated_genes.bed",
-    "RE_conservation_all/promoters_all.briggsae.associated_genes.bed",
-    "RE_conservation_all/promoters_m1m2.elegans.associated_genes.bed",
-    "RE_conservation_all/promoters_m1m2.briggsae.associated_genes.bed",
-    "RE_conservation_all/elegans_to_briggsae/promoters_m1m2.elegans.associated_genes.elegans_briggsae_orthologs",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_all.bed",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1m2.genes",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_dm2.genes",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_only.genes",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_dm1.genes",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m2_only.genes",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_m1_m2_no_pair.genes",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.genes",
-    "RE_conservation_all/conservation_statistics.txt",
-    "RE_conservation_all/briggsae_to_elegans/promoters_m1m2.briggsae.associated_genes.briggsae_elegans_orthologs",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_all.bed",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1m2.genes",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_dm2.genes",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_only.genes",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_dm1.genes",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m2_only.genes",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_m1_m2_no_pair.genes",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.genes",
-    "RE_conservation_all/elegans_to_briggsae/briggsae.to_elegans_orthologs.promoters_no_motifs.flanking_m1m2.genes",
-    "RE_conservation_all/briggsae_to_elegans/elegans.to_briggsae_orthologs.promoters_no_motifs.flanking_m1m2.genes",
-    "RE_conservation_all/conserved_vs_species_specific_promoters.m1m2_statistics.txt",
-    "plots/conserved_sp_specific_promoters.m1m2_overlap.pdf",
+    'colinear_genes/ele_bri.blastp.out',
+  resources:
+    cpus=10
   shell:
     '''
-    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[0]} | sort -k 4,4 > {output[0]}
-    awk 'BEGIN{{OFS="\t";}}{{if ($4 ~ ",") print $1, $2, $3, substr($4, 1, 14), $5, $6 "\\n" $1, $2, $3, substr($4, 16, 29), $5, $6; else print $0}}' {input[1]} | sort -k 4,4 > {output[1]}
-    intersectBed -a {output[0]} -b {input[2]} -u | intersectBed -a stdin -b {input[8]} -u > {output[2]}
-    intersectBed -a {output[1]} -b {input[3]} -u | intersectBed -a stdin -b {input[5]} -u > {output[3]}
-    sort -k 1,1 {input[4]} | join -1 1 -2 4 - {output[2]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[4]}
-    join -1 4 -2 2 {output[1]} {output[4]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[5]}
-    intersectBed -a {output[5]} -b {input[5]} -u | cut -f 4 | sort | uniq > {output[6]}
-    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -u | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[7]}
-    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[16]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[8]}
-    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -u | intersectBed -a stdin -b {input[6]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[9]}
-    intersectBed -a {output[5]} -b {input[7]} -u | intersectBed -a stdin -b {input[15]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[10]}
-    intersectBed -a {output[5]} -b {input[6]} -u | intersectBed -a stdin -b {input[7]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[6]} > {output[11]}
-    intersectBed -a {output[5]} -b {input[6]} -v | intersectBed -a stdin -b {input[7]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[6]} | join -v 1 - {output[7]} | join -v 1 - {output[8]} | join -v 1 - {output[9]} | join -v 1 - {output[10]} | join -v 1 - {output[11]} > {output[12]}
-    sort -k 4,4 {input[11]} | join -1 1 -2 4 {output[12]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[12]} | slopBed -r 200 -l 0 -s -i stdin -g {input[12]} | intersectBed -a stdin -b {input[5]} -u | cut -f 4 | sort > {output[23]}
-    echo -e "species1_GL_m1m2_genes\twith_orthologs\tspecies2_orthologs_with_promoters\tm1m2_orthologs\tm1_dm2_orthologs\tm1_only_orthologs\tm2_dm1_orthologs\tm2_only_orthologs\tm1m2_nopair_orthologs\tno_motif_orthologs_permissive\tno_motif_orthologs_flanking_m1m2" > {output[13]}
-    species1_GL_m1m2_genes=$(cut -f 4 {output[2]} | sort | uniq | wc -l)
-    with_orthologs=$(wc -l < {output[4]})
-    species2_orthologs_with_promoters=$(cut -f 4 {output[5]} | sort | uniq | wc -l)
-    m1m2_orthologs=$(wc -l < {output[6]})
-    m1_dm2_orthologs=$(wc -l < {output[7]})
-    m1_only_orthologs=$(wc -l < {output[8]})
-    m2_dm1_orthologs=$(wc -l < {output[9]})
-    m2_only_orthologs=$(wc -l < {output[10]})
-    m1m2_nopair_orthologs=$(wc -l < {output[11]})
-    no_motif_orthologs=$(wc -l < {output[12]})
-    no_motif_orthologs_stringent=$(wc -l < {output[23]})
-    echo -e "elegans.briggsae\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
-    sort -k 2,2 {input[4]} | join -1 2 -2 4 - {output[3]} | awk '{{print $1 "\t" $2}}' | sort -k 2,2 > {output[14]}
-    join -1 4 -2 2 {output[0]} {output[14]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' > {output[15]}
-    intersectBed -a {output[15]} -b {input[8]} -u | cut -f 4 | sort | uniq > {output[16]}
-    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -u | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[17]}
-    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[18]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[18]}
-    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -u | intersectBed -a stdin -b {input[9]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[19]}
-    intersectBed -a {output[15]} -b {input[10]} -u | intersectBed -a stdin -b {input[17]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[20]}
-    intersectBed -a {output[15]} -b {input[9]} -u | intersectBed -a stdin -b {input[10]} -u | cut -f 4 | sort | uniq | join -v 1 - {output[16]} > {output[21]}
-    intersectBed -a {output[15]} -b {input[9]} -v | intersectBed -a stdin -b {input[10]} -v | cut -f 4 | sort | uniq | join -v 1 - {output[16]} | join -v 1 - {output[17]} | join -v 1 - {output[18]} | join -v 1 - {output[19]} | join -v 1 - {output[20]} | join -v 1 - {output[21]} > {output[22]}
-    sort -k 4,4 {input[13]} | join -1 1 -2 4 {output[22]} - | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | flankBed -l 1000 -r 0 -s -i stdin -g {input[14]} | slopBed -r 200 -l 0 -s -i stdin -g {input[14]} | intersectBed -a stdin -b {input[8]} -u | cut -f 4 | sort > {output[24]}
-    species1_GL_m1m2_genes=$(cut -f 4 {output[3]} | sort | uniq | wc -l)
-    with_orthologs=$(wc -l < {output[14]})
-    species2_orthologs_with_promoters=$(cut -f 4 {output[15]} | sort | uniq | wc -l)
-    m1m2_orthologs=$(wc -l < {output[16]})
-    m1_dm2_orthologs=$(wc -l < {output[17]})
-    m1_only_orthologs=$(wc -l < {output[18]})
-    m2_dm1_orthologs=$(wc -l < {output[19]})
-    m2_only_orthologs=$(wc -l < {output[20]})
-    m1m2_nopair_orthologs=$(wc -l < {output[21]})
-    no_motif_orthologs=$(wc -l < {output[22]})
-    no_motif_orthologs_stringent=$(wc -l < {output[24]})
-    echo -e "briggsae.elegans\t"$species1_GL_m1m2_genes"\t"$with_orthologs"\t"$species2_orthologs_with_promoters"\t"$m1m2_orthologs"\t"$m1_dm2_orthologs"\t"$m1_only_orthologs"\t"$m2_dm1_orthologs"\t"$m2_only_orthologs"\t"$m1m2_nopair_orthologs"\t"$no_motif_orthologs"\t"$no_motif_orthologs_stringent >> {output[13]}
-    echo -e "convergent\tdivergent\ttandem_m1m2\ttandem_m2m1" > {output[25]}
-    elegans_conserved=$(cat {output[6]} {output[7]} {output[8]} {output[9]} {output[10]} {output[11]} {output[23]} | sort | uniq | join -1 1 -2 2 - {output[4]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[2]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[8]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
-    elegans_specific=$(join -v 1 {output[12]} {output[23]} | join -1 1 -2 2  - {output[4]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[2]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[8]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
-    briggsae_conserved=$(cat {output[16]} {output[17]} {output[18]} {output[19]} {output[20]} {output[21]} {output[24]} | sort | uniq | join -1 1 -2 2 - {output[14]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[3]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[5]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
-    briggsae_specific=$(join -v 1 {output[22]} {output[24]} | join -1 1 -2 2 - {output[14]} | awk '{{print $2}}' | sort | join -1 1 -2 4 - {output[3]} | awk 'BEGIN{{OFS="\t";}}{{print $2, $3, $4, $1, $5, $6}}' | intersectBed -a {input[5]} -b stdin -u | cut -f 5 | sort | uniq -c | awk '{{printf "\t" $1}}')
-    echo -e "elegans_conserved"$elegans_conserved"\nelegans_specific"$elegans_specific"\nbriggsae_conserved"$briggsae_conserved"\nbriggsae_specific"$briggsae_specific"\n" >> {output[25]}
-    Rscript scripts/RE_conservation_m1m2_fraction.R
+    blastp -query {input[0]} -db species/briggsae/protein_sequences/blastdb/briggsae.protein.longest_isoform.fa -num_threads {resources.cpus} -outfmt 6 > {output[0]}
+    '''
+
+
+rule dagchainer:
+  input:
+    'colinear_genes/ele_bri.blastp.out',
+    'data/external_data/elegans.briggsae.1to1.txt',
+    'species/elegans/gene_annotation/elegans.gene_annotation.coding_gene_longest_isoform.bed',
+    'species/briggsae/gene_annotation/briggsae.gene_annotation.coding_gene_longest_isoform.bed',
+  output:
+    'colinear_genes/ele_bri.dagchainer.input',
+    'colinear_genes/ele_bri.dagchainer.input.aligncoords',
+    'colinear_genes/ele_chain.D20000_A2_g3000_Z12.bed',
+    'colinear_genes/bri_chain.D20000_A2_g3000_.bed',
+    'colinear_genes/ele_chain.breakpoint_genes',
+    'colinear_genes/ele_chain.preserved_upstream_genes',
+    'colinear_genes/bri_chain.breakpoint_genes',
+    'colinear_genes/bri_chain.preserved_upstream_genes',
+  shell:
+    '''
+    python scripts/dagchainer_input_generator.py {input[0]} {input[1]} {input[2]} {input[3]} {output[0]}
+    run_DAG_chainer.pl -i {output[0]} -A 2 -D 20000 -g 3000 -Z 12
+    python scripts/dagchainer_parser.py {output[1]} {output[2]} {output[3]}
+    python scripts/dagchainer_chains_boundary_genes.py {output[2]} {input[2]} {output[4]} {output[5]}
+    python scripts/dagchainer_chains_boundary_genes.py {output[3]} {input[3]} {output[6]} {output[7]}
+    '''
+
+
+rule species_specific_genes_in_synteny:
+  input:
+    'coopted_CERP2_conservation/elegans_specific.briggsae_orthologs.genes',
+    'coopted_CERP2_conservation/briggsae_specific.elegans_orthologs.genes',
+    'colinear_genes/bri_chain.preserved_upstream_genes',
+    'colinear_genes/bri_chain.breakpoint_genes',
+    'colinear_genes/ele_chain.preserved_upstream_genes',
+    'colinear_genes/ele_chain.breakpoint_genes',
+  output:
+    'coopted_CERP2_conservation/synteny_preservation_summary',
+  shell:
+    '''
+    echo -e "species_specific_CERP2_orthologs\tpreserved_synteny\tsynteny_break" > {output}
+    ele_cerp2_specific=$(wc -l < {input[0]})
+    ele_cerp2_in_syn=$(sort {input[2]} | join {input[0]} - | wc -l)
+    ele_cerp2_syn_break=$(sort {input[3]} | join {input[0]} - | wc -l)
+    bri_cerp2_specific=$(wc -l < {input[1]})
+    bri_cerp2_in_syn=$(sort {input[4]} | join {input[1]} - | wc -l)
+    bri_cerp2_syn_break=$(sort {input[5]} | join {input[1]} - | wc -l)
+    echo -e "elegans\t"$ele_cerp2_specific"\t"$ele_cerp2_in_syn"\t"$ele_cerp2_syn_break >> {output}
+    echo -e "briggsae\t"$bri_cerp2_specific"\t"$bri_cerp2_in_syn"\t"$bri_cerp2_syn_break >> {output}
     '''
 
 
@@ -416,6 +553,8 @@ rule pgc_rnaseq_download:
     'data/external_data/rnaseq/fastq/fL1_pgc_rep1.r1.fq.gz',
     'data/external_data/rnaseq/fastq/fL1_pgc_rep2.r1.fq.gz',
     'data/external_data/rnaseq/fastq/fL1_pgc_rep3.r1.fq.gz',
+  resources:
+    download_streams=1
   shell:
     '''
     wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR577/005/SRR5772155/SRR5772155.fastq.gz -O {output[0]}
@@ -444,6 +583,8 @@ rule whole_worm_rnaseq_download:
     temp('data/external_data/rnaseq/fastq/elegans_YA_rep1.A.r1.fq.gz'),
     temp('data/external_data/rnaseq/fastq/elegans_YA_rep1.B.r1.fq.gz'),
     'data/external_data/rnaseq/fastq/elegans_YA_rep1.r1.fq.gz',
+  resources:
+    download_streams=1
   shell:
     '''
     wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR105/001/SRR1050771/SRR1050771.fastq.gz -O {output[0]}

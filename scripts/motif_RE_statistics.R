@@ -37,11 +37,11 @@ pdf(file = "plots/m1m2_repeat_overlap.elegans.pdf", width = 7, height = 5)
 
 par(mfrow=c(1,1), oma=c(2,0,0,0), mar=c(4,4,3,3), pch=21)
 k=barplot(elegans_m1m2_repeats_filtered_enrichment_matrix, beside=F, las=1,
-          col=c("grey90", "grey60", "grey30", "grey1"), main = "C. elegans m1m2 repeat overlap", ylab = "repeat fraction", ylim=c(0, 1), 
+          col=c("yellow", "forestgreen", "orangered", "deepskyblue", "grey70", "grey1"), main = "C. elegans m1m2 repeat overlap", ylab = "repeat fraction", ylim=c(0, 1), 
           names.arg=paste(elegans_m1m2_repeats_filtered_enriched$repeat., " (n=", elegans_m1m2_repeats_filtered_enriched$total_repeats, ")", sep=""))
 par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
 plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
-legend(0, -0.9, legend = c("convergent", "divergent", "tandem_m1m2", "tandem_m2m1"), fill = c("grey90", "grey60", "grey30", "grey1"), bty="n", ncol = 4, xjust = 0.5)
+legend(0, -0.9, legend = c("convergent", "divergent", "tandem_m1m2", "tandem_m2m1", "single motif","no motif"), fill = c("yellow", "forestgreen", "orangered", "deepskyblue", "grey70", "grey1"), bty="n", ncol = 3, xjust = 0.5)
 
 dev.off()
 
