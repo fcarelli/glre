@@ -27,10 +27,7 @@ If you plan to use different sets of data, modify the [config.yaml](relmapping/w
 ## germline-specific elements analysis (glre step)
 After annotating the C. elegans and C. briggsae regulatory elements, you can reproduce the analysis of germline-specific regulatory elements described in Carelli et al \[in prep\]. 
 
-You will first have to upload the sets of ChIP-seq and RNA-seq data listed in [glre_seq_data.txt] in the /glre/data folder with the following command:
-```
-wget whatever
-```
+You will first have to upload the ChIP-seq and RNA-seq datasets listed in [glre_seq_data.txt] in the /glre/data folder; files are available to download from GEO (GSE192540).
 Then, you can launch the glre step
 ```
 source activate glre
